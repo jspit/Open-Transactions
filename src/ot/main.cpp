@@ -136,26 +136,10 @@
 #define OT_INI_FILE_DEFAULT	"ot_init.cfg"
 #define OT_PROMPT_HELPFILE "CLIENT-COMMANDS.txt"
 
-// ---------------------------------------------------------------------------
+#define OT_FOLDER_DEFAULT   ".ot"
+#define MAIN_PATH_DEFAULT	".ot/client_data"
 
-#ifdef _WIN32
-#define OT_FOLDER_DEFAULT   "C:\\~\\Open-Transactions"
-#define MAIN_PATH_DEFAULT	"C:\\~\\Open-Transactions\\client_data"
 
-#define CA_FILE             "certs\\special\\ca.crt"
-#define KEY_FILE            "certs\\special\\client.pem"
-
-// ---------------------------------------------------------------------------
-
-#else
-
-#define OT_FOLDER_DEFAULT   "~/.ot"
-#define MAIN_PATH_DEFAULT	"~/.ot/client_data"
-
-#define CA_FILE             "certs/special/ca.crt"
-#define KEY_FILE            "certs/special/client.pem"
-
-#endif
 
 // ---------------------------------------------------------------------------
 

@@ -39,6 +39,7 @@
     <ClInclude Include="..\..\include\otlib\Moneychanger.pb.h" />
     <ClInclude Include="..\..\include\otlib\OTAccount.h" />
     <ClInclude Include="..\..\include\otlib\OTAgreement.h" />
+    <ClInclude Include="..\..\include\otlib\OTAppData.h" />
     <ClInclude Include="..\..\include\otlib\OTASCIIArmor.h" />
     <ClInclude Include="..\..\include\otlib\OTAssetContract.h" />
     <ClInclude Include="..\..\include\otlib\OTAsymmetricKey.h" />
@@ -102,6 +103,7 @@
     <ClCompile Include="..\..\src\otlib\Moneychanger.pb.cpp" />
     <ClCompile Include="..\..\src\otlib\OTAccount.cpp" />
     <ClCompile Include="..\..\src\otlib\OTAgreement.cpp" />
+    <ClCompile Include="..\..\src\otlib\OTAppData.cpp" />
     <ClCompile Include="..\..\src\otlib\OTASCIIArmor.cpp" />
     <ClCompile Include="..\..\src\otlib\OTAssetContract.cpp" />
     <ClCompile Include="..\..\src\otlib\OTAsymmetricKey.cpp" />

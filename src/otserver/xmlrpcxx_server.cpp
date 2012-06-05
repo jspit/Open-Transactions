@@ -146,8 +146,9 @@
 //
 // Paths
 //
-#define OT_INI_FILE_DEFAULT	".ot/ot.ini"  //should get programicaly
-#define SERVER_PATH_DEFAULT	".ot/server_data" //should get programicaly
+#define OT_FOLDER_DEFAULT   ".ot"
+#define OT_INI_FILE_DEFAULT	"ot_init.cfg"  //should get programicaly
+#define SERVER_PATH_DEFAULT	"server_data" //should get programicaly
 
 // ----------------------------------------------------------------
 
