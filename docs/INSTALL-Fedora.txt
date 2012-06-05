@@ -79,6 +79,8 @@ Enable Configuration for SWIG Python Support:
 
 $export PYTHON_PATH=$HOME/.local/lib:$PYTHON_PATH
 
+$export PYTHON_PATH=$HOME/.local/lib:$PYTHON_PATH
+
 
 $ make uninstall (to cleanup anthing in you .local folder)
 
