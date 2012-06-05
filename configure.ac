@@ -157,7 +157,6 @@ if (test "x$with_php" == "xyes"); then
 
 fi
 
-
 ##### (Option) Add SWIG PYTHON #####
 
 AC_ARG_WITH(
