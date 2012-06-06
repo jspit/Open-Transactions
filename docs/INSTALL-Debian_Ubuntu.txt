@@ -42,18 +42,20 @@ $ sudo aptitude install wget git build-essential libtool automake cmake pkg-conf
 # install Open-Transactions library dependencies
 $ sudo aptitude install libboost-dev libboost-thread-dev libzmq-dev libmsgpack-dev libssl-dev libprotobuf-dev
 
-# install JAVA for SWIG JAVA
+#### Optional API deps -begin ####
+#(only JAVA needed for Moneychanger)
+# install cool for SWIG JAVA
 $ sudo aptitude install openjdk-6-jdk openjdk-6-source
 
-# install JAVA for SWIG PERL5
+# install dev deps for SWIG PERL5
 $ sudo aptitude install libperl-dev
 
-# install JAVA for SWIG PHP
+# install dev deps for SWIG PHP
 $ sudo aptitude install php5-dev
 
-# install JAVA for SWIG PYTHON
+# install dev deps for SWIG PYTHON
 $ sudo aptitude install python-dev
-
+#### Optional API deps -end ####
 
 ## DEBIAN ONLY ##
 
@@ -101,8 +103,8 @@ $ mkdir -p build && cd build
 $ ../configure --prefix=$HOME/.local
 
 
-#### Configure Options: -begin ####
-
+### Configure Options: -begin ###
+##
 Enable Configuration in Release Mode:
 --enable-release	
 
@@ -112,42 +114,36 @@ Enable extra (noisy) warnings with compile:
 Enable the signal handling for catching segmentation fault's (debug only):
 --enable-sighandler
 
-
-#### Swig Options:  ####
+# Swig API support options:  #
 
 Enable Configuration for SWIG Java Support:
 --with-java
 
-
 Enable Configuration for SWIG Perl 5 Support:
 --with-perl5
-
 
 Enable Configuration for SWIG PHP Support:
 --with-php
 
-
 Enable Configuration for SWIG Python Support:
 --with-python
-
-(Need to set the path to the installed 
-python ot library "_otapi.so", e.g.)
-
-$export PYTHONPATH=$HOME/.local/lib:$PYTHONPATH
-
-#### Configure Options: -end  ####
-
+(NB:at run need to set python path to OT library "_otapi.so";
+$ export PYTHONPATH=$HOME/.local/lib:$PYTHONPATH
+)
+#
+##
+### Configure Options: -end  ###
 
 $ make uninstall (to cleanup anthing in you .local folder)
 
 $ make
 
-#### Make Options: ####
+### Make option: ###
 
 Build Multithreaded, need about 1gb of ram per thread.
 -j (int, mutiple of of 2)
 
-#### ---//--- ####
+### ---//--- ###
 
 $ make install
 

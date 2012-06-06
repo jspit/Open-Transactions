@@ -7,14 +7,29 @@
 #########################################################################
 
 
-
 # install general developer dependencies
 $ sudo yum install gcc autoconf automake libtool wget cmake
 
 # install Open-Transactions library dependencies
 $ sudo yum install boost-devel zeromq-devel protobuf-devel openssl-devel
 
+### Optional API deps -begin ###
+##(only JAVA needed for Moneychanger)
+#
+# install cool if build for SWIG JAVA
+$ sudo yum install java-1.6.0-openjdk java-1.6.0-openjdk-devel
 
+# install dev deps if build for SWIG PERL5
+$ sudo yum install ????
+
+# install dev deps if build SWIG PHP
+$ sudo yum install php-devel
+
+# install dev deps if buuld for SWIG PYTHON
+$ sudo yum install python-devel
+
+##
+### Optional API deps -end ###
 
 # if your version of Fedora doesn't include OpenSSL 1.0:
 $ wget http://openssl.org/source/openssl-1.0.0j.tar.gz
@@ -58,17 +73,15 @@ $ ../configure --prefix=$HOME/.local
 
 #### BEGIN Swig Options:  ####
 
+
 Enable Configuration for SWIG Java Support:
 --with-java
-
 
 Enable Configuration for SWIG Perl 5 Support:
 --with-perl5
 
-
 Enable Configuration for SWIG PHP Support:
 --with-php
-
 
 Enable Configuration for SWIG Python Support:
 --with-python
@@ -91,6 +104,7 @@ $ make uninstall (to cleanup anthing in you .local folder)
 
 $ make
 
+
 #### BEGIN Misc. Options: ####
 
 Enable Configuration in Release Mode:
@@ -98,6 +112,7 @@ Enable Configuration in Release Mode:
 
 Enable extra (noisy) warnings with compile:
 --enable-warnings
+
 
 Enable the signal handling for catching segmentation fault's (debug only):
 --enable-sighandler
