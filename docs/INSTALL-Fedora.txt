@@ -56,18 +56,7 @@ $ cd build
 
 $ ../configure --prefix=$HOME/.local
 
-#### Options: ####
-
-Enable Configuration in Release Mode:
---enable-release	
-
-Enable extra (noisy) warnings with compile:
---enable-warnings
-
-Enable the signal handling for catching segmentation fault's (debug only):
---enable-sighandler
-
-#### Swig Options:  ####
+#### BEGIN Swig Options:  ####
 
 Enable Configuration for SWIG Java Support:
 --with-java
@@ -83,17 +72,32 @@ Enable Configuration for SWIG PHP Support:
 
 Enable Configuration for SWIG Python Support:
 --with-python
+(needs pkg python-devel installed "$sudo yum install python-devel")
+
+
+#### END SWIG Options
 
 $export PYTHON_PATH=$HOME/.local/lib:$PYTHON_PATH
+
 
 $ make uninstall (to cleanup anthing in you .local folder)
 
 $ make
 
-#### Options: ####
+#### BEGIN Misc. Options: ####
+
+Enable Configuration in Release Mode:
+--enable-release	
+
+Enable extra (noisy) warnings with compile:
+--enable-warnings
+
+Enable the signal handling for catching segmentation fault's (debug only):
+--enable-sighandler
 
 Build Multithreaded, need about 1gb of ram per thread.
 -j (int, mutiple of of 2)
 
+#### END Misc. Options: ####
 
 $ make install

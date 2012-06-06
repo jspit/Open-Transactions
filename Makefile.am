@@ -509,32 +509,6 @@ libotapi_php_la_CPPFLAGS +=		-DOT_ZMQ_MODE
 endif
 
 
-
-#### OT API PYTHON
-
-if WANT_PYTHON
-lib_LTLIBRARIES +=			libotapi_python.la
-endif
-
-libotapi_python_la_SOURCES =		swig/otapi/OTAPI-python.cxx
-
-libotapi_python_la_CPPFLAGS =		$(AM_CPPFLAGS)	-fpic		\
-					-I$(otapi_headers_dir)		\
-					$(PYTHON_CPPFLAGS)		\
-					$(PYTHON_EXTRA_LIBS)
-					
-
-libotapi_python_la_LIBADD =		libotapi.la libot.la
-libotapi_python_la_DEPENDENCIES =	libotapi.la libot.la
-
-libotapi_python_la_LDFLAGS =		--no-undefined			\
-					$(PYTHON_LDFLAGS)		\
-					$(PYTHON_EXTRA_LDFLAGS)
-
-if TRANSPORT_ZMQ
-libotapi_python_la_CPPFLAGS +=		-DOT_ZMQ_MODE
-endif
-
 #### OT API PYTHON
 
 if WANT_PYTHON
