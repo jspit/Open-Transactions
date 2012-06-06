@@ -167,6 +167,7 @@ AC_ARG_WITH(
 
 AM_CONDITIONAL([WANT_PYTHON], [test "x$with_python" == "xyes"], [])
 
+
 if (test "x$with_python" == "xyes"); then
 	AX_PYTHON_DEVEL
 
