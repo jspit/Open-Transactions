@@ -79,8 +79,13 @@ Enable Configuration for SWIG Python Support:
 
 $export PYTHON_PATH=$HOME/.local/lib:$PYTHON_PATH
 
-$export PYTHON_PATH=$HOME/.local/lib:$PYTHON_PATH
+(needs pkg python-devel installed "$sudo yum install python-devel"
+and to run need to set the path to the installed 
+python ot library "_otapi.so", e.g.)
 
+$export PYTHONPATH=$HOME/.local/lib:$PYTHONPATH
+
+#### Configure Options: -end  ####
 
 $ make uninstall (to cleanup anthing in you .local folder)
 
