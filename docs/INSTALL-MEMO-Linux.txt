@@ -11,11 +11,11 @@
 
 # fetch OT and prepare your copy for build
 
-$ export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH
-
-$ git clone git://github.com/da2ce7/Open-Transactions.git
-
+$ git clone git://github.com/FellowTraveler/Open-Transactions.git
 $ cd Open-Transactions
+
+# might need to tell autoconf to look for dep packages in $HOME/.local
+$ export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH
 
 $ autoreconf -i -f
 $ mkdir -p build && cd build
@@ -29,7 +29,6 @@ $ make
 $ make install
 
 # create your data directory (will reset everything):
-
 $ mkdir -p ~/.ot && cp -R sample-data/ot-sample-data/* ~/.ot
 
 # add to .profile (.bash_profile in Fedora, RH, CentOS, etc)
