@@ -184,71 +184,25 @@
 
 #include "OTString.h"
 
-typedef std::deque <OTString *> dequeOfStrings;
+EXPORT typedef std::deque <OTString *> dequeOfStrings;
 
 class OTLog
 {
 private:
 	OTLog();
 
-	static int		__CurrentLogLevel;
-	static OTString	__Version;			// current version of Open Transactions is stored here.
-
-	static OTString	__OTPath;			// Path to either server or client directory. (Whichever is running.)
-	static OTString	__OTPathSeparator;	// double-backslash in Windows, forward-slash in others.
-	
-	static OTString __OTCronFolder;		// Just the folder name for the cron records (trades, payment plans...)
-	static OTString __OTNymFolder;		// Just the folder name
-	static OTString __OTAccountFolder;	// Just the folder name
-	static OTString __OTUserAcctFolder;	// Just the folder name
-	static OTString __OTReceiptFolder;	// Just the folder name
-	static OTString __OTNymboxFolder;	// Just the folder name
-	static OTString __OTInboxFolder;	// Just the folder name
-	static OTString __OTOutboxFolder;	// Just the folder name
-	static OTString __OTPaymentInboxFolder;	
-	static OTString __OTRecordBoxFolder;
-	static OTString __OTCertFolder;		// Just the folder name
-	static OTString __OTPubkeyFolder;	// Just the folder name
-	static OTString __OTContractFolder;	// Just the folder name
-	static OTString __OTMintFolder;		// Just the folder name
-	static OTString __OTSpentFolder;	// Just the folder name
-	static OTString __OTPurseFolder;	// Just the folder name
-	static OTString __OTMarketFolder;	// Just the folder name
-	
-	static OTString __OTScriptFolder;
-	static OTString __OTSmartContractsFolder;
-
-	static OTString __OTLogfile;		// Optional, logfile (full path.)
-	
-	static dequeOfStrings __logDeque; // Stores the last 1024 logs in memory.
-	
-    // -------------------------------------------------
-    
-	static bool		__blocking;		// Should OT block on network send/receive? (Hang on the call until it returns with something.)
-	
-    static int      __latency_send_delay_after; // Delay after each message is sent (client side only.)
-	
-    static int      __latency_send_no_tries; // Number of times will try to send a message.
-    static int      __latency_receive_no_tries; // Number of times will try to receive a reply.
-    
-    static int      __latency_send_ms; // number of ms to wait before retrying send. (doubles after each try)
-    static int      __latency_receive_ms; // number of ms to wait before retrying receive. (doubles after each try)
-    
-	static long		__minimum_market_scale; // Server admin can configure this to any higher power-of-ten.
-    // -------------------------------------------------
-
 public:	
     
-EXPORT    static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it in xmlrpcxx_client.cpp just above OT_Init.
+EXPORT	static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it in xmlrpcxx_client.cpp just above OT_Init.
     
     // -------------------------------------------------
 	~OTLog();
 	
     // Changes ~/blah to /Users/au/blah
     //
-EXPORT    static void TransformFilePath(const char * szInput, OTString & strOutput);
+EXPORT	static void TransformFilePath(const char * szInput, OTString & strOutput);
     
-	static void LogToFile(const char * szOutput);
+EXPORT	static void LogToFile(const char * szOutput);
 
 	// --------------------------------------------------
 	// We keep 1024 logs in memory, to make them available via the API.
@@ -263,19 +217,19 @@ EXPORT	static const char * PeekMemlogBack();
 EXPORT	static bool PopMemlogFront();
 EXPORT	static bool PopMemlogBack();
 	
-	static bool PushMemlogFront(const char * szLog);
-	static bool PushMemlogBack(const char * szLog);
+EXPORT	static bool PushMemlogFront(const char * szLog);
+EXPORT	static bool PushMemlogBack(const char * szLog);
 	
 	// --------------------------------------------------
 	
-	static void SleepSeconds(long lSeconds);
+EXPORT	static void SleepSeconds(long lSeconds);
 EXPORT	static void SleepMilliseconds(long lMilliseconds);
 	
 	// Used for making sure that certain necessary folders actually exist. (Creates them otherwise.)
 	// Creates inside Path(). IE:  <path>/szFolderName
 EXPORT	static bool ConfirmOrCreateFolder(const char * szFolderName);
-	static bool ConfirmFile(const char * szFileName);
-	static bool ConfirmExactPath(const char * szFileName); // This one expects fully-qualified path.
+EXPORT	static bool ConfirmFile(const char * szFileName);
+EXPORT	static bool ConfirmExactPath(const char * szFileName); // This one expects fully-qualified path.
 	
 	// OTPath is where all the subdirectories can be found.
 	// If the server is what's running, then it's the server folder.
@@ -283,102 +237,102 @@ EXPORT	static bool ConfirmOrCreateFolder(const char * szFolderName);
 	
 	// ------------------------------------------------------------
 	
-	static const char *	Path()			{ return __OTPath.Get(); }
-	static const char *	PathSeparator()	{ return __OTPathSeparator.Get(); }
+EXPORT	static const char *	Path();
+EXPORT	static const char *	PathSeparator();
 	
-	static void SetMainPath(const char * szPath) { __OTPath.Set(szPath); }
-	static void SetPathSeparator(const char * szPathSeparator) { __OTPathSeparator.Set(szPathSeparator); }
-	
-	// ------------------------------------------------------------
-	
-	static const char *	CronFolder()				{ return __OTCronFolder.Get(); }
-	static void SetCronFolder(const char * szPath)	{ __OTCronFolder.Set(szPath); }
-	
-	static const char *	NymFolder()				{ return __OTNymFolder.Get(); }
-	static void SetNymFolder(const char * szPath)	{ __OTNymFolder.Set(szPath); }
-	
-	static const char *	ReceiptFolder()				{ return __OTReceiptFolder.Get(); }
-	static void SetReceiptFolder(const char * szPath)	{ __OTReceiptFolder.Set(szPath); }
-	
-	static const char *	NymboxFolder()				{ return __OTNymboxFolder.Get(); }
-	static void SetNymboxFolder(const char * szPath)	{ __OTNymboxFolder.Set(szPath); }
-	
-	static const char *	AccountFolder()				{ return __OTAccountFolder.Get(); }
-	static void SetAccountFolder(const char * szPath){ __OTAccountFolder.Set(szPath); }
-	
-	static const char *	UserAcctFolder()				{ return __OTUserAcctFolder.Get(); }
-	static void SetUserAcctFolder(const char * szPath){ __OTUserAcctFolder.Set(szPath); }
-	
-	static const char *	InboxFolder()				{ return __OTInboxFolder.Get(); }
-	static void SetInboxFolder(const char * szPath)	{ __OTInboxFolder.Set(szPath); }
-	
-	static const char *	OutboxFolder()				{ return __OTOutboxFolder.Get(); }
-	static void SetOutboxFolder(const char * szPath)	{ __OTOutboxFolder.Set(szPath); }
-	
-	static const char *	PaymentInboxFolder()		{ return __OTPaymentInboxFolder.Get(); }
-	static void SetPaymentInboxFolder(const char * szPath)	{ __OTPaymentInboxFolder.Set(szPath); }
-	
-	static const char *	RecordBoxFolder()			{ return __OTRecordBoxFolder.Get(); }
-	static void SetRecordBoxFolder(const char * szPath)	{ __OTRecordBoxFolder.Set(szPath); }
-	
-	static const char *	CertFolder()				{ return __OTCertFolder.Get(); }
-	static void SetCertFolder(const char * szPath)	{ __OTCertFolder.Set(szPath); }
-	
-	static const char *	PubkeyFolder()				{ return __OTPubkeyFolder.Get(); }
-	static void SetPubkeyFolder(const char * szPath){ __OTPubkeyFolder.Set(szPath); }
-	
-	static const char *	ContractFolder()			{ return __OTContractFolder.Get(); }
-	static void SetContractFolder(const char * szPath)	{ __OTContractFolder.Set(szPath); }
-	
-	static const char *	MintFolder()			{ return __OTMintFolder.Get(); }
-	static void SetMintFolder(const char * szPath)	{ __OTMintFolder.Set(szPath); }
-	
-	static const char *	SpentFolder()				{ return __OTSpentFolder.Get(); }
-	static void SetSpentFolder(const char * szPath)	{ __OTSpentFolder.Set(szPath); }
-	
-	static const char *	PurseFolder()				{ return __OTPurseFolder.Get(); }
-	static void SetPurseFolder(const char * szPath)	{ __OTPurseFolder.Set(szPath); }
-	
-	static const char *	MarketFolder()				{ return __OTMarketFolder.Get(); }
-	static void SetMarketFolder(const char * szPath){ __OTMarketFolder.Set(szPath); }
-	
-	static const char *	ScriptFolder()				{ return __OTScriptFolder.Get(); }
-	static void SetScriptFolder(const char * szPath){ __OTScriptFolder.Set(szPath); }
-	
-	static const char *	SmartContractsFolder()		{ return __OTSmartContractsFolder.Get(); }
-	static void SetSmartContractsFolder(const char * szPath)	{ __OTSmartContractsFolder.Set(szPath); }
-	
-	static const char *	Logfile()				{ return __OTLogfile.Get(); }
-	static void SetLogfile(const char * szPath)	{ __OTLogfile.Set(szPath); }
+EXPORT	static void SetMainPath(const char * szPath);
+EXPORT	static void SetPathSeparator(const char * szPathSeparator);
 	
 	// ------------------------------------------------------------
 	
-	static 
-	const char *	Version() { return __Version.Get(); }
+EXPORT	static const char *	CronFolder();
+EXPORT	static void SetCronFolder(const char * szPath);
 	
-	static int		GetLogLevel() { return __CurrentLogLevel; }
-	static void		SetLogLevel(int nLevel) { __CurrentLogLevel = nLevel; }
+EXPORT	static const char *	NymFolder();
+EXPORT	static void SetNymFolder(const char * szPath);
+	
+EXPORT	static const char *	ReceiptFolder();
+EXPORT	static void SetReceiptFolder(const char * szPath);
+	
+EXPORT	static const char *	NymboxFolder();
+EXPORT	static void SetNymboxFolder(const char * szPath);
+	
+EXPORT	static const char *	AccountFolder();
+EXPORT	static void SetAccountFolder(const char * szPath);
+	
+EXPORT	static const char *	UserAcctFolder();
+EXPORT	static void SetUserAcctFolder(const char * szPath);
+	
+EXPORT	static const char *	InboxFolder();
+EXPORT	static void SetInboxFolder(const char * szPath);
+	
+EXPORT	static const char *	OutboxFolder();
+EXPORT	static void SetOutboxFolder(const char * szPath);
+	
+EXPORT	static const char *	PaymentInboxFolder();
+EXPORT	static void SetPaymentInboxFolder(const char * szPath);
+	
+EXPORT	static const char *	RecordBoxFolder();
+EXPORT	static void SetRecordBoxFolder(const char * szPath);
+	
+EXPORT	static const char *	CertFolder();
+EXPORT	static void SetCertFolder(const char * szPath);
+	
+EXPORT	static const char *	PubkeyFolder();
+EXPORT	static void SetPubkeyFolder(const char * szPath);
+	
+EXPORT	static const char *	ContractFolder();
+EXPORT	static void SetContractFolder(const char * szPath);
+	
+EXPORT	static const char *	MintFolder();
+EXPORT	static void SetMintFolder(const char * szPath);
+	
+EXPORT	static const char *	SpentFolder();
+EXPORT	static void SetSpentFolder(const char * szPath);
+	
+EXPORT	static const char *	PurseFolder();
+EXPORT	static void SetPurseFolder(const char * szPath);
+	
+EXPORT	static const char *	MarketFolder();
+EXPORT	static void SetMarketFolder(const char * szPath);
+	
+EXPORT	static const char *	ScriptFolder();
+EXPORT	static void SetScriptFolder(const char * szPath);
+	
+EXPORT	static const char *	SmartContractsFolder();
+EXPORT	static void SetSmartContractsFolder(const char * szPath);
+	
+EXPORT	static const char *	Logfile();
+EXPORT	static void SetLogfile(const char * szPath);
+	
+	// ------------------------------------------------------------
+	
+EXPORT	static 
+	const char *	Version();
+	
+EXPORT	static int		GetLogLevel();
+EXPORT	static void		SetLogLevel(int nLevel);
 	
 	// --------------------------------------------------------
 	
-	static bool		IsBlocking() { return __blocking; }
-	static void		SetBlocking(bool bBlocking) { __blocking = bBlocking; }
+EXPORT	static bool		IsBlocking();
+EXPORT	static void		SetBlocking(bool bBlocking);
 
-	static int      GetLatencyDelayAfter() { return __latency_send_delay_after; }
-    static void     SetLatencyDelayAfter(int nVal) { __latency_send_delay_after = nVal; }
+EXPORT	static int      GetLatencyDelayAfter();
+EXPORT	static void     SetLatencyDelayAfter(int nVal);
 
-    static int      GetLatencySendNoTries() { return __latency_send_no_tries; }
-    static void     SetLatencySendNoTries(int nVal) { __latency_send_no_tries = nVal; }
-    static int      GetLatencyReceiveNoTries() { return __latency_receive_no_tries; }
-    static void     SetLatencyReceiveNoTries(int nVal) { __latency_receive_no_tries = nVal; }
+EXPORT	static int      GetLatencySendNoTries();
+EXPORT	static void     SetLatencySendNoTries(int nVal);
+EXPORT	static int      GetLatencyReceiveNoTries();
+EXPORT	static void     SetLatencyReceiveNoTries(int nVal);
     
-    static int      GetLatencySendMs() { return __latency_send_ms; }
-    static void     SetLatencySendMs(int nVal) { __latency_send_ms = nVal; }
-    static int      GetLatencyReceiveMs() { return __latency_receive_ms; }
-    static void     SetLatencyReceiveMs(int nVal) { __latency_receive_ms = nVal; }
+EXPORT	static int      GetLatencySendMs();
+EXPORT	static void     SetLatencySendMs(int nVal);
+EXPORT	static int      GetLatencyReceiveMs();
+EXPORT	static void     SetLatencyReceiveMs(int nVal);
 
-	static long		GetMinMarketScale() { return __minimum_market_scale; }
-	static void		SetMinMarketScale(const long & lMinScale) { __minimum_market_scale = lMinScale; }
+EXPORT	static long		GetMinMarketScale();
+EXPORT	static void		SetMinMarketScale(const long & lMinScale);
 	
 	// -----------------------------------------------
     //
@@ -406,7 +360,7 @@ EXPORT	static int Assert(const char * szFilename, int nLinenumber, const char * 
 	// really want to see EVERYTHING.)
 	
 EXPORT	static void Output(int nVerbosity, const char * szOutput); // stdout
-	static void Output(int nVerbosity, OTString & strOutput); // stdout
+EXPORT	static void Output(int nVerbosity, OTString & strOutput); // stdout
 EXPORT	static void vOutput(int nVerbosity, const char *szOutput, ...);
 
 	// This logs an error condition, which usually means bad input from the user, or a file wouldn't open,
@@ -414,7 +368,7 @@ EXPORT	static void vOutput(int nVerbosity, const char *szOutput, ...);
 	// expects bad user input from time to time. But it never expects a loaded mint to have a NULL pointer.
 	// The bad input would log with Error(), whereas the NULL pointer would log with Assert();
 EXPORT	static void Error(const char * szError); // stderr
-	static void Error(OTString & strError); // stderr
+EXPORT	static void Error(OTString & strError); // stderr
 EXPORT	static void vError(const char * szError, ...); // stderr
 };
 
