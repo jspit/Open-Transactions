@@ -198,8 +198,8 @@ extern "C"
 {
 typedef int OT_OPENSSL_CALLBACK(char *buf, int size, int rwflag, void *userdata); // <== Callback type, used for declaring.
 	
-	OT_OPENSSL_CALLBACK default_pass_cb;
-	OT_OPENSSL_CALLBACK souped_up_pass_cb;
+EXPORT	OT_OPENSSL_CALLBACK default_pass_cb;
+EXPORT	OT_OPENSSL_CALLBACK souped_up_pass_cb;
 }
 // ------------------------------------------------
 // Used for the actual function definition (in the .cpp file).

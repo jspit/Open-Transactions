@@ -82,6 +82,7 @@
  *      
  ************************************************************************************/
 
+#include <WinsockWrapper.h> 
 
 extern "C"
 {
@@ -89,6 +90,7 @@ extern "C"
 #include <sys/stat.h>	
 #include <openssl/ssl.h>
 }
+
 
 #include <ctime>
 
@@ -101,6 +103,11 @@ extern "C"
 #include "OTMint.h"
 
 #include "OTLog.h"
+#ifdef _WIN32
+OTString OTLog::__OTPath("."); // it defaults to '.' but then it is set by the client and server.
+OTString OTLog::__OTPathSeparator = "/";
+OTString OTLog::__OTMintFolder				= "mints";
+#endif
 
 
 // run this program from inside the transaction directory (it's a tool for creating mints for the server.)

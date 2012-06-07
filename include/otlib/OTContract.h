@@ -349,7 +349,7 @@ EXPORT	void ReleaseSignatures();
 	// This function is for those times when you already have the unsigned version 
 	// of the contract, and you have the signer, and you just want to sign it and
 	// calculate its new ID from the finished result.
-	virtual bool CreateContract(OTString & strContract, OTPseudonym & theSigner);
+EXPORT	virtual bool CreateContract(OTString & strContract, OTPseudonym & theSigner);
 	
 	bool InsertNym(const OTString & strKeyName, const OTString & strKeyValue);
 
@@ -364,7 +364,7 @@ EXPORT	void ReleaseSignatures();
 	
 	// Only overriden in OTOffer so far.
 	virtual void GetIdentifier(OTIdentifier & theIdentifier);// You can get it in string or binary form.
-	virtual void GetIdentifier(OTString & theIdentifier);    // The Contract ID is a hash of the contract raw file.
+EXPORT	virtual void GetIdentifier(OTString & theIdentifier);    // The Contract ID is a hash of the contract raw file.
 	
 	void GetFilename(OTString & strFilename);
 	void GetFoldername(OTString & strFoldername);

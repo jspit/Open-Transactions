@@ -1,7 +1,8 @@
+#include <WinsockWrapper.h> 
+
 extern "C"
 {
-#include <stdio.h>
-	
+#include <stdio.h>	
 #include <openssl/ssl.h>
 }
 
@@ -20,6 +21,12 @@ extern "C"
 #include "OTServerContract.h"
 #include "OTSignedFile.h"
 #include "OTLog.h"
+#ifdef _WIN32
+OTString OTLog::__OTPath("."); // it defaults to '.' but then it is set by the client and server.
+OTString OTLog::__OTPathSeparator = "/";
+OTString OTLog::__OTNymFolder				= "nyms";		
+#endif
+
 
 
 // Run this program from inside the testwallet directory.
