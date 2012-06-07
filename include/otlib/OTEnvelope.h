@@ -399,7 +399,7 @@ EXPORT    bool isPaused();
     
     // --------------------------------
 EXPORT    bool SerializeTo   (OTASCIIArmor & ascOutput);
-    bool SerializeFrom (const OTASCIIArmor & ascInput);
+EXPORT    bool SerializeFrom (const OTASCIIArmor & ascInput);
     // --------------------------------
 
     // These two functions are used by the OTServer or OTWallet that actually keeps
@@ -441,26 +441,32 @@ private:
     // ---------------------------------------------
 public:
     // ------------------------------------------------------------------------
-    bool SerializeTo   (OTPayload & theOutput) const;
+EXPORT    bool SerializeTo   (OTPayload & theOutput) const;
     bool SerializeFrom (OTPayload & theInput);
     
     bool SerializeTo   (OTASCIIArmor & ascOutput) const;
     bool SerializeFrom (const OTASCIIArmor & ascInput);
     
-    bool SerializeTo   (OTString & strOutput, bool bEscaped=false) const;
-    bool SerializeFrom (const OTString & strInput, bool bEscaped=false);
+EXPORT    bool SerializeTo   (OTString & strOutput, bool bEscaped=false) const;
+EXPORT    bool SerializeFrom (const OTString & strInput, bool bEscaped=false);
     // ------------------------------------------------------------------------
     inline bool IsGenerated() const { return m_bIsGenerated; }
     // ------------------------------------------------------------------------    
     bool GetRawKey  (const OTPassword & thePassword, OTPassword & theRawKeyOutput) const; // Assumes key is already generated. Tries to get the raw clear key from its encrypted form, via its password.
-    bool GenerateKey(const OTPassword & thePassword);  // Generates this OTSymmetricKey based on an OTPassword. The generated key is stored in encrypted form, based on a derived key from that password.
+EXPORT    bool GenerateKey(const OTPassword & thePassword);  // Generates this OTSymmetricKey based on an OTPassword. The generated key is stored in encrypted form, based on a derived key from that password.
     
     // ------------------------------------------------------------------------
+<<<<<<< HEAD
 	OTSymmetricKey();
 	OTSymmetricKey(const OTPassword & thePassword);
     
 	virtual ~OTSymmetricKey();
     virtual void Release();
+=======
+EXPORT	OTSymmetricKey();
+EXPORT	OTSymmetricKey(const OTPassword & thePassword);
+EXPORT	virtual ~OTSymmetricKey();
+>>>>>>> everything compiles on windows again
     
     void Release_SymmetricKey();
     // ------------------------------------------------------------------------
@@ -561,8 +567,8 @@ EXPORT	virtual ~OTEnvelope();
     // ------------------------------------------------------------------------
 	// SYMMETRIC CRYPTO  (AES)
     
-    bool Encrypt(const OTString & theInput,        OTSymmetricKey & theKey, const OTPassword & thePassword);
-    bool Decrypt(      OTString & theOutput, const OTSymmetricKey & theKey, const OTPassword & thePassword);
+EXPORT    bool Encrypt(const OTString & theInput,        OTSymmetricKey & theKey, const OTPassword & thePassword);
+EXPORT    bool Decrypt(      OTString & theOutput, const OTSymmetricKey & theKey, const OTPassword & thePassword);
     
     // ------------------------------------------------------------------------
     static
