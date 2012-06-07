@@ -160,8 +160,8 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 
-# to avoid logging out and then logging back in again you can just do ...
-source .profile
+# to avoid logging out and then logging back in again, just do ...
+$ source .profile
 
-# then you can start up your server with 
-otserver
+# then to start up OT server 
+$ otserver

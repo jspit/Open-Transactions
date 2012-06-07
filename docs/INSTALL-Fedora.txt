@@ -123,3 +123,9 @@ Build Multithreaded, need about 1gb of ram per thread.
 #### END Misc. Options: ####
 
 $ make install
+
+# to avoid logging out and then logging back in again, just do ...
+$ source .profile
+
+# then to start up OT server 
+$ otserver
