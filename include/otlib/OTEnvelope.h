@@ -456,17 +456,11 @@ EXPORT    bool SerializeFrom (const OTString & strInput, bool bEscaped=false);
 EXPORT    bool GenerateKey(const OTPassword & thePassword);  // Generates this OTSymmetricKey based on an OTPassword. The generated key is stored in encrypted form, based on a derived key from that password.
     
     // ------------------------------------------------------------------------
-<<<<<<< HEAD
-	OTSymmetricKey();
-	OTSymmetricKey(const OTPassword & thePassword);
-    
-	virtual ~OTSymmetricKey();
-    virtual void Release();
-=======
 EXPORT	OTSymmetricKey();
 EXPORT	OTSymmetricKey(const OTPassword & thePassword);
+    
 EXPORT	virtual ~OTSymmetricKey();
->>>>>>> everything compiles on windows again
+EXPORT    virtual void Release();
     
     void Release_SymmetricKey();
     // ------------------------------------------------------------------------

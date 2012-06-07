@@ -147,6 +147,10 @@
 #include <WinsockWrapper.h>
 #endif
 
+#ifdef _WIN32
+#include <Shlobj.h>
+#endif
+
 
 // ----------------------------------------
 // Use Win or Posix
@@ -268,96 +272,7 @@ namespace {
 #endif
 
 
-// If it MUST output, set the verbosity to 0. Less important logs are
-// at higher and higher levels.
-//
-// All are sent to stdout, but the 0 are the most important ones.
-// By default, only those are actually logged. If you want to see the other messages,
-// then set this log level to a higher value sometime when you start execution.
-// (Or right here.)
 
-#if defined (DSP)					   
-int OTLog::__CurrentLogLevel = 0;	// If you build with DSP=1, it assumes a special location for OpenSSL,
-#else								// and it turns off all the output.
-int OTLog::__CurrentLogLevel = 0;
-#endif
-
-
-// These are only default values. There are configurable in the config file.
-//
-bool	OTLog::__blocking = false;	// Normally false. This means we will wait FOREVER when trying to send or receive.
-
-// Delay after each message is sent (client side only.)
-int		OTLog::__latency_send_delay_after = 50;	// It's 50 here after every server request, but also there's a default sleep of 50 in the java GUI after groups of messages.
-
-int     OTLog::__latency_send_no_tries = 2; // Number of times will try to send a message.
-int     OTLog::__latency_receive_no_tries = 2; // Number of times will try to receive a reply.
-
-int     OTLog::__latency_send_ms = 5000; // number of ms to wait before retrying send.
-int     OTLog::__latency_receive_ms = 5000; // number of ms to wait before retrying receive.
-
-
-long	OTLog::__minimum_market_scale = 1;	// Server admin can configure this to any higher power-of-ten.
-
-
-OTString OTLog::__Version = "0.82.i";
-
-
-
-
-
-// ---------------------------------------------------------------------------------
-// This is the "global" path to the subdirectories. The wallet file is probably also there.
-//
-OTString OTLog::__OTPath("."); // it defaults to '.' but then it is set by the client and server.
-OTString OTLog::__OTConfigPath(OT_FOLDER_DEFAULT); // it defaults to "~/.ot" but then it can be refreshed with the wordexp translation.
-OTString OTLog::__OTPrefixPath(OT_PREFIX_DEFAULT); // it defaults to "/usr/local" or "~/.local" but then it can be refreshed with the wordexp translation.
-
-
-
-// All my paths now use the global path above, and are constructed using
-// the path separator below. So the filesystem aspect of Open Transactions
-// should be a LOT more portable to Windows, though I haven't actually tried
-// it on Windows.
-//
-OTString OTLog::__OTPathSeparator = OT_DEFAULT_PATH_SEPARATOR;
-
-// ---------------------------------------------------------------------------------
-
-
-// Just a default value, since this is configurable programmatically.
-
-// these are static
-
-OTString OTLog::__OTCronFolder				= "cron";		
-OTString OTLog::__OTNymFolder				= "nyms";		
-OTString OTLog::__OTAccountFolder			= "accounts";	
-OTString OTLog::__OTUserAcctFolder			= "useraccounts";	
-OTString OTLog::__OTReceiptFolder			= "receipts";		
-OTString OTLog::__OTNymboxFolder			= "nymbox";		
-OTString OTLog::__OTInboxFolder				= "inbox";		
-OTString OTLog::__OTOutboxFolder			= "outbox";	
-OTString OTLog::__OTPaymentInboxFolder			= "paymentInbox";		
-OTString OTLog::__OTRecordBoxFolder			= "recordBox";
-OTString OTLog::__OTCertFolder				= "certs";		
-OTString OTLog::__OTPubkeyFolder			= "pubkeys";
-OTString OTLog::__OTContractFolder			= "contracts";
-OTString OTLog::__OTMintFolder				= "mints";
-OTString OTLog::__OTSpentFolder				= "spent";
-OTString OTLog::__OTPurseFolder				= "purse";
-OTString OTLog::__OTMarketFolder			= "markets";
-OTString OTLog::__OTScriptFolder			= "scripts";
-OTString OTLog::__OTSmartContractsFolder		= "smartcontracts";
-
-
-OTString OTLog::__OTLogfile;
-
-// If Logfile uninitialized, we assume NO logfile, and we log to output.
-// Otherwise, we append to the logfile, and leave output clear.
-
-// --------------------------------------------------
-
-dequeOfStrings OTLog::__logDeque; // Stores the last 1024 logs in memory.
 
 
 // *********************************************************************************
@@ -369,6 +284,184 @@ dequeOfStrings OTLog::__logDeque; // Stores the last 1024 logs in memory.
 //
 
 // *********************************************************************************
+
+// If it MUST output, set the verbosity to 0. Less important logs are
+// at higher and higher levels.
+//
+// All are sent to stdout, but the 0 are the most important ones.
+// By default, only those are actually logged. If you want to see the other messages,
+// then set this log level to a higher value sometime when you start execution.
+// (Or right here.)
+
+#if defined (DSP)					   
+static int OTLog::__CurrentLogLevel = 0;	// If you build with DSP=1, it assumes a special location for OpenSSL,
+#else								// and it turns off all the output.
+static int __CurrentLogLevel = 0;
+#endif
+
+
+// ---------------------------------------------------------------------------------
+// This is the "global" path to the subdirectories. The wallet file is probably also there.
+static OTString __OTPath = "."; // it defaults to '.' but then it is set by the client and server.
+static OTString	__OTConfigPath = ".";     // Path to the config files. (server.cfg, client.cfg, init_ot.cfg) Usually ~/.ot
+static OTString	__OTPrefixPath = ".";     // Prefix used during configure. "/usr/local" for example.
+                                        // The script headers will be located at $(prefix)/lib/opentxs
+                                        // while $(prefix)/lib/opentxs/scripts will be for the sample scripts.
+
+// All my paths now use the global path above, and are constructed using
+// the path separator below. So the filesystem aspect of Open Transactions
+// should be a LOT more portable to Windows, though I haven't actually tried
+// it on Windows.
+
+static OTString __OTPathSeparator = "/";
+	
+// Just a default value, since this is configurable programmatically.
+
+static OTString __Version = "0.82.i";
+
+static OTString __OTCronFolder				= "cron";		
+static OTString __OTNymFolder				= "nyms";		
+static OTString __OTAccountFolder			= "accounts";	
+static OTString __OTUserAcctFolder			= "useraccounts";	
+static OTString __OTReceiptFolder			= "receipts";		
+static OTString __OTNymboxFolder			= "nymbox";		
+static OTString __OTInboxFolder				= "inbox";		
+static OTString __OTOutboxFolder			= "outbox";	
+static OTString __OTPaymentInboxFolder		= "paymentInbox";		
+static OTString __OTRecordBoxFolder			= "recordBox";
+static OTString __OTCertFolder				= "certs";		
+static OTString __OTPubkeyFolder			= "pubkeys";
+static OTString __OTContractFolder			= "contracts";
+static OTString __OTMintFolder				= "mints";
+static OTString __OTSpentFolder				= "spent";
+static OTString __OTPurseFolder				= "purse";
+static OTString __OTMarketFolder			= "markets";
+static OTString __OTScriptFolder			= "scripts";
+static OTString __OTSmartContractsFolder	= "smartcontracts";
+
+static OTString __OTLogfile;		// Optional, logfile (full path.)
+	
+static dequeOfStrings __logDeque; // Stores the last 1024 logs in memory.
+
+
+// These are only default values. There are configurable in the config file.
+//
+static bool	__blocking = false;	// Normally false. This means we will wait FOREVER when trying to send or receive.
+
+// Delay after each message is sent (client side only.)
+static int		__latency_send_delay_after = 50;	// It's 50 here after every server request, but also there's a default sleep of 50 in the java GUI after groups of messages.
+
+static int     __latency_send_no_tries = 2; // Number of times will try to send a message.
+static int     __latency_receive_no_tries = 2; // Number of times will try to receive a reply.
+
+static int     __latency_send_ms = 5000; // number of ms to wait before retrying send.
+static int     __latency_receive_ms = 5000; // number of ms to wait before retrying receive.
+
+static long	__minimum_market_scale = 1;	// Server admin can configure this to any higher power-of-ten.
+
+
+
+
+const char *	OTLog::Path()			{ return __OTPath.Get(); };
+const char *	OTLog::PrefixPath()			{ return __OTPrefixPath.Get(); };
+const char *	OTLog::ConfigPath()			{ return __OTConfigPath.Get(); };
+const char *	OTLog::PathSeparator()	{ return __OTPathSeparator.Get(); }
+	
+void OTLog::SetMainPath(const char * szPath) { __OTPath.Set(szPath); }
+void OTLog::SetPrefixPath(const char * szPrefixPath) { __OTPrefixPath.Set(szPrefixPath); }
+void OTLog::SetConfigPath(const char * szConfigPath) { __OTConfigPath.Set(szConfigPath); }
+void OTLog::SetPathSeparator(const char * szPathSeparator) { __OTPathSeparator.Set(szPathSeparator); }
+	
+	// ------------------------------------------------------------
+	
+const char *	OTLog::CronFolder()				{ return __OTCronFolder.Get(); }
+void OTLog::SetCronFolder(const char * szPath)	{ __OTCronFolder.Set(szPath); }
+	
+const char *	OTLog::NymFolder()				{ return __OTNymFolder.Get(); }
+void OTLog::SetNymFolder(const char * szPath)	{ __OTNymFolder.Set(szPath); }
+	
+const char *	OTLog::ReceiptFolder()				{ return __OTReceiptFolder.Get(); }
+void OTLog::SetReceiptFolder(const char * szPath)	{ __OTReceiptFolder.Set(szPath); }
+	
+const char *	OTLog::NymboxFolder()				{ return __OTNymboxFolder.Get(); }
+void OTLog::SetNymboxFolder(const char * szPath)	{ __OTNymboxFolder.Set(szPath); }
+	
+const char *	OTLog::AccountFolder()				{ return __OTAccountFolder.Get(); }
+void OTLog::SetAccountFolder(const char * szPath){ __OTAccountFolder.Set(szPath); }
+	
+const char *	OTLog::UserAcctFolder()				{ return __OTUserAcctFolder.Get(); }
+void OTLog::SetUserAcctFolder(const char * szPath){ __OTUserAcctFolder.Set(szPath); }
+	
+const char *	OTLog::InboxFolder()				{ return __OTInboxFolder.Get(); }
+void OTLog::SetInboxFolder(const char * szPath)	{ __OTInboxFolder.Set(szPath); }
+	
+const char *	OTLog::OutboxFolder()				{ return __OTOutboxFolder.Get(); }
+void OTLog::SetOutboxFolder(const char * szPath)	{ __OTOutboxFolder.Set(szPath); }
+	
+const char *	OTLog::PaymentInboxFolder()		{ return __OTPaymentInboxFolder.Get(); }
+void OTLog::SetPaymentInboxFolder(const char * szPath)	{ __OTPaymentInboxFolder.Set(szPath); }
+	
+const char *	OTLog::RecordBoxFolder()			{ return __OTRecordBoxFolder.Get(); }
+void OTLog::SetRecordBoxFolder(const char * szPath)	{ __OTRecordBoxFolder.Set(szPath); }
+	
+const char *	OTLog::CertFolder()				{ return __OTCertFolder.Get(); }
+void OTLog::SetCertFolder(const char * szPath)	{ __OTCertFolder.Set(szPath); }
+	
+const char *	OTLog::PubkeyFolder()				{ return __OTPubkeyFolder.Get(); }
+void OTLog::SetPubkeyFolder(const char * szPath){ __OTPubkeyFolder.Set(szPath); }
+	
+const char *	OTLog::ContractFolder()			{ return __OTContractFolder.Get(); }
+void OTLog::SetContractFolder(const char * szPath)	{ __OTContractFolder.Set(szPath); }
+	
+const char *	OTLog::MintFolder()			{ return __OTMintFolder.Get(); }
+void OTLog::SetMintFolder(const char * szPath)	{ __OTMintFolder.Set(szPath); }
+	
+const char *	OTLog::SpentFolder()				{ return __OTSpentFolder.Get(); }
+void OTLog::SetSpentFolder(const char * szPath)	{ __OTSpentFolder.Set(szPath); }
+	
+const char *	OTLog::PurseFolder()				{ return __OTPurseFolder.Get(); }
+void OTLog::SetPurseFolder(const char * szPath)	{ __OTPurseFolder.Set(szPath); }
+	
+const char *	OTLog::MarketFolder()				{ return __OTMarketFolder.Get(); }
+void OTLog::SetMarketFolder(const char * szPath){ __OTMarketFolder.Set(szPath); }
+	
+const char *	OTLog::ScriptFolder()				{ return __OTScriptFolder.Get(); }
+void OTLog::SetScriptFolder(const char * szPath){ __OTScriptFolder.Set(szPath); }
+	
+const char *	OTLog::SmartContractsFolder()		{ return __OTSmartContractsFolder.Get(); }
+void OTLog::SetSmartContractsFolder(const char * szPath)	{ __OTSmartContractsFolder.Set(szPath); }
+	
+const char *	OTLog::Logfile()				{ return __OTLogfile.Get(); }
+void OTLog::SetLogfile(const char * szPath)	{ __OTLogfile.Set(szPath); }
+	
+	// ------------------------------------------------------------
+	
+
+const char *	OTLog::Version() { return __Version.Get(); }
+	
+int		OTLog::GetLogLevel() { return __CurrentLogLevel; }
+void	OTLog::SetLogLevel(int nLevel) { __CurrentLogLevel = nLevel; }
+	
+	// --------------------------------------------------------
+	
+bool	OTLog::IsBlocking() { return __blocking; }
+void	OTLog::SetBlocking(bool bBlocking) { __blocking = bBlocking; }
+
+int      OTLog::GetLatencyDelayAfter() { return __latency_send_delay_after; }
+void     OTLog::SetLatencyDelayAfter(int nVal) { __latency_send_delay_after = nVal; }
+
+int      OTLog::GetLatencySendNoTries() { return __latency_send_no_tries; }
+void     OTLog::SetLatencySendNoTries(int nVal) { __latency_send_no_tries = nVal; }
+int      OTLog::GetLatencyReceiveNoTries() { return __latency_receive_no_tries; }
+void     OTLog::SetLatencyReceiveNoTries(int nVal) { __latency_receive_no_tries = nVal; }
+    
+int      OTLog::GetLatencySendMs() { return __latency_send_ms; }
+void     OTLog::SetLatencySendMs(int nVal) { __latency_send_ms = nVal; }
+int      OTLog::GetLatencyReceiveMs() { return __latency_receive_ms; }
+void     OTLog::SetLatencyReceiveMs(int nVal) { __latency_receive_ms = nVal; }
+
+long	OTLog::GetMinMarketScale() { return __minimum_market_scale; }
+void	OTLog::SetMinMarketScale(const long & lMinScale) { __minimum_market_scale = lMinScale; }
 
 
 
@@ -1094,10 +1187,6 @@ void OTLog::SetupSignalHandler()
 
 
 
-
-
-
-
 // static
 // Changes ~/blah to /Users/au/blah
 //
@@ -1106,81 +1195,48 @@ void OTLog::TransformFilePath(const char * szInput, OTString & strOutput)
     OT_ASSERT(NULL != szInput);
     
 #ifndef _WIN32 // if UNIX (NOT windows)
-	wordexp_t exp_result;
+//	wordexp_t exp_result;
+//	
+//    exp_result.we_wordc = 0;
+//    exp_result.we_wordv = NULL;
+//    exp_result.we_offs  = 0;
+//    
+//	if (wordexp(szInput, &exp_result, 0))  // If non-zero, then failure.
+//	{
+//		OTLog::vError("%s: Error calling wordexp() to expand path.\n", __FUNCTION__);
+////		wordfree(&exp_result); 
+//		strOutput.Set(szInput);
+//		return;
+//	}
+//	// ----------------------------
+//	
+//	std::string str_Output("");
+//	
+//    if ((exp_result.we_wordc > 0) && (NULL != exp_result.we_wordv))
+//    {
+//        // wordexp tokenizes by space (as well as expands, which is why I'm using it.)
+//        // Therefore we need to iterate through the tokens, and create a single string
+//        // with spaces between the tokens.
+//        //
+//        int nCount = -1;
+//        
+//        for (unsigned int i = 0; (i < exp_result.we_wordc) && (exp_result.we_wordv[i] != NULL); ++i)
+//        {
+//            ++nCount; // 0 on first iteration.
+//            // ---------------
+//            str_Output += exp_result.we_wordv[i];
+//            
+//            if (static_cast<unsigned int>(nCount) < (exp_result.we_wordc)-1) // we don't add a space after the last one.
+//                str_Output += " ";
+//        }
+//        
+//        wordfree(&exp_result); 
+//    }
+//    
+//    if (str_Output.size() > 0)
+//        strOutput.Set(str_Output.c_str());
+//    else
 	
-    exp_result.we_wordc = 0;
-    exp_result.we_wordv = NULL;
-    exp_result.we_offs  = 0;
-    
-    OTString strError;
-    
-    const int nWordExp = wordexp(szInput, &exp_result, WRDE_NOCMD|WRDE_SHOWERR|WRDE_UNDEF);
-    
-	if (0 != nWordExp)  // If non-zero, then failure.
-	{
-        switch (nWordExp)
-        {
-//          case 0:			// Successful.
-//              break;
-            case WRDE_BADCHAR:
-                strError = "An unquoted metacharacter appeared in the wrong place.";
-                break;
-            case WRDE_BADVAL:
-                strError = "There was an undefined environment variable reference with the WRDE_UNDEF flag set.";
-                break;
-            case WRDE_CMDSUB:
-                strError = "Command substitution was requested with the WRDE_NOCMD flag set.";
-                break;
-            case WRDE_SYNTAX:
-                strError = "There was a sh syntax error.";
-                break;
-            case WRDE_NOSPACE:
-                /* If the error was WRDE_NOSPACE,
-                 then perhaps part of the result was allocated.  */
-//              wordfree (&exp_result);
-                strError = "The process ran out of memory.";
-                break;
-            default:                    /* Some other error.  */
-                strError = "(UNDEFINED!)";
-                break;
-        }
-        
-
-		OTLog::vError("%s: Error calling wordexp() to expand path: %s\nWORDEXP OUTPUT: %s\n", 
-                      __FUNCTION__, szInput, strError.Get());
-		wordfree(&exp_result); 
-		strOutput.Set(szInput);
-		return;
-	}
-	// ----------------------------
-	
-	std::string str_Output("");
-	
-    if ((exp_result.we_wordc > 0) && (NULL != exp_result.we_wordv))
-    {
-        // wordexp tokenizes by space (as well as expands, which is why I'm using it.)
-        // Therefore we need to iterate through the tokens, and create a single string
-        // with spaces between the tokens.
-        //
-        int nCount = -1;
-        
-        for (unsigned int i = 0; (i < exp_result.we_wordc) && (exp_result.we_wordv[i] != NULL); ++i)
-        {
-            ++nCount; // 0 on first iteration.
-            // ---------------
-            str_Output += exp_result.we_wordv[i];
-            
-            if (static_cast<unsigned int>(nCount) < (exp_result.we_wordc)-1) // we don't add a space after the last one.
-                str_Output += " ";
-        }
-        
-        wordfree(&exp_result); 
-    }
-    
-    if (str_Output.size() > 0)
-        strOutput.Set(str_Output.c_str());
-    else
-        strOutput.Set(szInput);
 #else
 	strOutput.Set(szInput);
 #endif  
@@ -1438,8 +1494,8 @@ int OTLog::Assert(const char * szFilename, int nLinenumber)
 //
 void OTLog::LogToFile(const char * szOutput)
 {
-    // Append to logfile
-	if ((NULL != szOutput) && OTLog::__OTLogfile.Exists())
+	    // Append to logfile
+	if ((NULL != szOutput) && (NULL != &__OTLogfile))
 	{
 		std::ofstream logfile;
 		logfile.open (OTLog::Logfile(), std::ios::app);
@@ -1468,7 +1524,7 @@ void OTLog::Output(int nVerbosity, const char *szOutput)
 {
 	// If log level is 0, and verbosity of this message is 2, don't bother logging it.
 //	if (nVerbosity > OTLog::__CurrentLogLevel || (NULL == szOutput))
-	if ((nVerbosity > OTLog::__CurrentLogLevel) || (NULL == szOutput) || (OTLog::__CurrentLogLevel == (-1)))		
+	if ((nVerbosity > __CurrentLogLevel) || (NULL == szOutput) || (__CurrentLogLevel == (-1)))		
 		return; 
 
 	// We store the last 1024 logs so programmers can access them via the API.
@@ -1524,7 +1580,7 @@ void OTLog::Output(int nVerbosity, OTString & strOutput)
 void OTLog::vOutput(int nVerbosity, const char *szOutput, ...)
 {
 	// If log level is 0, and verbosity of this message is 2, don't bother logging it.
-	if (nVerbosity > OTLog::__CurrentLogLevel || (NULL == szOutput))
+	if (((NULL != __CurrentLogLevel) && (nVerbosity > __CurrentLogLevel)) || (NULL == szOutput))
 		return; 
 	
 	va_list args;
@@ -1682,10 +1738,21 @@ bool OTLog::ConfirmOrCreateFolder(const char * szFolderName)
 	struct stat st;
 	
 	OTString strRawPath;
-    
+
+		//const OTString * pOTPath = OTLog::OTPath();
+		//OTString OTPath = * pOTPath;
+		//OTLog::vOutput(0,	"OTLog::Path(): %s:%p\n",OTPath.Get(),pOTPath);
+
+	OTLog::vOutput(1,	"OTLog::Path(): %s\n",OTLog::Path());
+
     if (strFolderName.Compare("."))
         strRawPath.Format("%s", OTLog::Path());
     else
+		OT_ASSERT_MSG(NULL != OTLog::Path(), "If Setting Full Path, Should Have Path Set!");
+
+		OTLog::vOutput(1, "OTLog::ConfirmOrCreateFolder: Formating Path with %s - %s - %s \n",
+                   OTLog::Path(), OTLog::PathSeparator(),strFolderName.Get());
+
         strRawPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), strFolderName.Get());
 	
 //	OTLog::vError("**** Path: %s  Foldername: %s    Total: %s \n",
