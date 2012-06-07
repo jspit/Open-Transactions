@@ -15,13 +15,9 @@ $ mkdir -p build && cd build
 $ ../configure --prefix=$HOME/.local --with-java
 
 $ make uninstall (to cleanup anthing in you .local folder)
+
 $ make
-
 (can add -j2 option for speedy build)
-
-## Fetch FT's MoneyChanger binary jar file while OT is building
-
-$ wget -P $HOME/.local/jar https://github.com/downloads/FellowTraveler/Moneychanger/MoneyChanger.jar
 
 $ make install
 
