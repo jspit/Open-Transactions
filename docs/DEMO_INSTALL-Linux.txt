@@ -1,3 +1,15 @@
+#########################################################################
+#									#
+#									#
+#	##		DEMO_INSTALL - Linux			##	#
+#									#
+#									#
+#########################################################################
+#
+# Quick start guide (and memo) for demo OT install on Linux.
+# (assumes dependencies are satisfied)
+
+
 # Fetch FT's MoneyChanger client binary jar
 
 $ wget -P $HOME/.local/jar https://github.com/downloads/FellowTraveler/Moneychanger/MoneyChanger.jar
