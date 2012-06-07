@@ -432,6 +432,10 @@ namespace OTDB
 							std::string oneStr/*=""*/,  std::string twoStr/*=""*/,  std::string threeStr/*=""*/, 
 							std::string fourStr/*=""*/, std::string fiveStr/*=""*/, std::string sixStr/*=""*/)
 	{	
+
+
+
+
 		// This allows you to call multiple times if you want to change the default storage.
 		//
 //		if (NULL != details::s_pStorage)
@@ -3224,9 +3228,17 @@ namespace OTDB
 			return false;
 		}
 		// --------------------------------
-		OTLog::vOutput(3, "StorageFS::Init: New path segments are: %s %s %s %s %s %s\n", 
+		if ((NULL != threeStr.c_str()) && (NULL != fourStr.c_str()) && (NULL != fiveStr.c_str()) && (NULL != sixStr.c_str())){
+		OTLog::vOutput(1,	"StorageFS::Init: New path segments are:\n"
+							"	Path To Data Folder:	%s\n"
+							"	Wallet.xml Filename:	%s\n",
+							oneStr.c_str(), twoStr.c_str());
+		}
+		else{
+		OTLog::vOutput(1, "StorageFS::Init: New path segments are:%s-%s-%s-%s-%s\n", 
 					   oneStr.c_str(), twoStr.c_str(), threeStr.c_str(),
 					   fourStr.c_str(), fiveStr.c_str(), sixStr.c_str());
+		};
 		// --------------------------------
 		if (twoStr.length() < 1)
 			OTLog::Output(1, " (If calling from client API, make sure to call LoadWallet after this.) \n");
