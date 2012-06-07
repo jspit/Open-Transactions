@@ -7,14 +7,9 @@
 #########################################################################
 #
 # Quick start guide (and memo) for generic OT install on Linux.
-# (assumes dependencies are satisfied)
+# (assumes dependencies are already satisfied)
 
-
-# Fetch FT's MoneyChanger client binary jar
-
-$ wget -P $HOME/.local/jar https://github.com/downloads/FellowTraveler/Moneychanger/MoneyChanger.jar
-
-# Fetch OT and prepare your copy for build
+# fetch OT and prepare your copy for build
 
 $ export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH
 
@@ -26,18 +21,18 @@ $ autoreconf -i -f
 $ mkdir -p build && cd build
 $ ../configure --prefix=$HOME/.local --with-java
 
-$ make uninstall (to cleanup anthing in you .local folder)
+$ make uninstall (to cleanup anthing in your .local dir)
 
 $ make
-(can add -j2 option for speedy build)
+# (can add -j2 option for speedy build)
 
 $ make install
 
-Create your data folder (will reset everything):
+# create your data directory (will reset everything):
 
 $ mkdir -p ~/.ot && cp -R sample-data/ot-sample-data/* ~/.ot
 
-### add to .profile (.bash_profile in Fedora, RH, CentOS) ###
+# add to .profile (.bash_profile in Fedora, RH, CentOS, etc)
 
 # set PATH so it includes user's .local root bin if it exists
 if [ -d "$HOME/.local/bin" ] ; then
@@ -50,6 +45,8 @@ $ source .profile
 # then to start up OT server 
 $ otserver
 
-# Now launch Moneychanger
-$ cd $HOME/.local/jar
-$ java -jar MoneyChanger.jar
+#### Test OT with Java test client, Moneychanger  ####
+
+# fetch FT's MoneyChanger jar and launch
+$ wget -P $HOME/.local/jar https://github.com/downloads/FellowTraveler/Moneychanger/MoneyChanger.jar
+$ java -jar $HOME/.local/jar/MoneyChanger.jar
