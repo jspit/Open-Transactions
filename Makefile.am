@@ -473,13 +473,15 @@ endif
 
 libotapi_perl5_la_SOURCES =		swig/otapi/OTAPI-perl5.cxx
 libotapi_perl5_la_CPPFLAGS =		$(AM_CPPFLAGS)			\
-					-I$(otapi_headers_dir)
+					-I$(otapi_headers_dir)		\
+					$(PERL_EXT_CPPFLAGS)		\
+					-I$(PERL_EXT_INC)
 
 libotapi_perl5_la_LIBADD =		libotapi.la libot.la
 libotapi_perl5_la_DEPENDENCIES =	libotapi.la libot.la
 
-libotapi_perl5_la_LDFLAGS =		--no-undefined
-
+libotapi_perl5_la_LDFLAGS =		--no-undefined			\
+					$(PERL_EXT_LDFLAGS)
 if TRANSPORT_ZMQ
 libotapi_perl5_la_CPPFLAGS +=		-DOT_ZMQ_MODE
 endif
@@ -508,32 +510,6 @@ if TRANSPORT_ZMQ
 libotapi_php_la_CPPFLAGS +=		-DOT_ZMQ_MODE
 endif
 
-
-
-#### OT API PYTHON
-
-if WANT_PYTHON
-lib_LTLIBRARIES +=			libotapi_python.la
-endif
-
-libotapi_python_la_SOURCES =		swig/otapi/OTAPI-python.cxx
-
-libotapi_python_la_CPPFLAGS =		$(AM_CPPFLAGS)	-fpic		\
-					-I$(otapi_headers_dir)		\
-					$(PYTHON_CPPFLAGS)		\
-					$(PYTHON_EXTRA_LIBS)
-					
-
-libotapi_python_la_LIBADD =		libotapi.la libot.la
-libotapi_python_la_DEPENDENCIES =	libotapi.la libot.la
-
-libotapi_python_la_LDFLAGS =		--no-undefined			\
-					$(PYTHON_LDFLAGS)		\
-					$(PYTHON_EXTRA_LDFLAGS)
-
-if TRANSPORT_ZMQ
-libotapi_python_la_CPPFLAGS +=		-DOT_ZMQ_MODE
-endif
 
 #### OT API PYTHON
 
