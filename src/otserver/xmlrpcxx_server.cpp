@@ -126,6 +126,18 @@
  **************************************************************/
 
 
+// ------------------------------------------------
+
+// TODO: what about android for all the defaults here? Are there ini files in android? Revisit.
+// so far, treating it like unix since it is.
+//
+// Paths
+//
+#define SERVER_PATH_DEFAULT	"server_data" //should get programicaly
+
+// ----------------------------------------------------------------
+
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -647,111 +659,6 @@ bool OTSocket::Receive(std::string & str_Message)
 }
 
 
-// ***********************************************************************
-//
-// EVR PATH
-//
-OTString GetRoamingAppDataLocation()
-	{
-#ifdef _WIN32
-
-		
-		TCHAR szPath[MAX_PATH];
-
-		if(SUCCEEDED(SHGetFolderPath(NULL, 
-                             CSIDL_APPDATA|CSIDL_FLAG_CREATE, 
-                             NULL, 
-                             0, 
-                             szPath))) ;
-
-		#ifdef UNICODE
-		std::string stdpath = utf8util::UTF8FromUTF16(szPath);
-		#else
-		std::string string(szPath);
-		std::string stdpath = szPath;
-		#endif
-
-		return stdpath;
-
-		// Old Code... Good, except worked for Windows Vista or greater only.
-		// We should use this code when we decide to disscontinue Win XP support.
-
-		//wchar_t* roamingAppData = 0;
-		//SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &roamingAppData);
-
-		//std::wstring basicstring(roamingAppData);
-
-		//std::string stdstring = utf8util::UTF8FromUTF16(basicstring);
-
-		//return stdstring;
-#else
-		return getenv("HOME");
-#endif
-	};
-
-
-// ***********************************************************************
-//
-// INI FILE
-//
-bool GetOTAppDataFolderLocation(const OTString & strIniFileDefault, OTString & strOTServerDataLocation)
-{
-    CSimpleIniA ini;
-    SI_Error rc = ini.LoadFile(strIniFileDefault.Get());
-    if (rc >=0)
-    {
-        {
-            const char * pVal = ini.GetValue("paths", "prefix_path", OT_PREFIX_DEFAULT); // todo stop hardcoding.
-            
-            if (NULL != pVal)
-            {
-                OTLog::SetPrefixPath(pVal);
-                OTLog::vOutput(0, "server main: Reading ini file (%s). \n Found prefix_path: %s \n", 
-                               strIniFileDefault.Get(), OTLog::PrefixPath());
-            }
-            else
-                OTLog::vOutput(0, "server main:Ini file: %s: Failed to find prefix_path. \n", strIniFileDefault.Get());
-        }            
-        {
-            const char * pVal = ini.GetValue("paths", "init_path", OT_FOLDER_DEFAULT); // todo stop hardcoding.
-            
-            if (NULL != pVal)
-            {
-                OTLog::SetConfigPath(pVal);
-                OTLog::vOutput(0, "server main: Reading ini file (%s). \n Found Server init_path: %s \n", 
-                               strIniFileDefault.Get(), OTLog::ConfigPath());
-            }
-            else
-                OTLog::vOutput(0, "server main:Ini file: %s: Failed to find init_path. \n", strIniFileDefault.Get());
-        }            
-        {
-            const char * pVal = ini.GetValue("paths", "server_path", SERVER_PATH_DEFAULT); // todo stop hardcoding.
-            
-            if (NULL != pVal)
-            {
-                strOTServerDataLocation.Set(pVal);
-                OTLog::vOutput(0, "server main: Reading ini file (%s). \n Found Server data_folder path: %s \n", 
-                               strIniFileDefault.Get(), strOTServerDataLocation.Get());
-                return true;
-            }
-            
-            OTLog::vOutput(0, "server main: Reading ini file (%s) \n", strIniFileDefault.Get());
-            return false;
-        }            
-    }
-    else 
-    {
-        OTLog::vOutput(0, "server main: Unable to load ini file (%s) to find data_folder path \n", 
-                       strIniFileDefault.Get());
-        return false;
-    }
-}
-
-
-
-
-
-
 // *********************************************************************************************************
 //
 //
@@ -844,30 +751,15 @@ int main(int argc, char* argv[])
             //
             OT_ASSERT_MSG(NULL != m_pServer, "server main(): ASSERT: Unable to instantiate OT server.\n");
 
-			OTString pathUserAppDataPath, pathIniFileLocation;
 
-			pathUserAppDataPath = GetRoamingAppDataLocation();
-			pathIniFileLocation.Format("%s%s%s", pathUserAppDataPath.Get(), OTLog::PathSeparator(), SERVER_INI_FILE_DEFAULT);
+			//
+			// OT Server Path:
+			//
 
+			OTString strServerKeyDefault(SERVER_PATH_DEFAULT);
+			bool bFindOTPath = OTLog::FindOTPath(strServerKeyDefault);
 
-			OTString pathOTServerDataLocation;
-
-			OTLog::vOutput(0, "\nFound ot_init.cfg in: \n     %s \nNow checking to see if it contains the OT Server path...", pathIniFileLocation.Get());
-			// Read the File, If successful use result
-
-			if (false == GetOTAppDataFolderLocation(pathIniFileLocation, pathOTServerDataLocation))
-			{
-				OTLog::vOutput(0, "Path not found... Will attempt default!... \n");
-				// Not successfull will will assume it is in default location:
-				pathOTServerDataLocation.Format("%s%s%s", pathUserAppDataPath.Get(), OTLog::PathSeparator(), SERVER_PATH_DEFAULT);
-			};
-
-			OTLog::vOutput(0, "     %s \n", pathOTServerDataLocation.Get());
-
-
-			OTLog::SetMainPath(pathOTServerDataLocation.Get());              // <============ SET MAIN PATH
-            OTLog::vOutput(0, "Using server_data path:  %s\n", OTLog::Path());
-
+			OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
 
             // -----------------------------------------------------------------------    
             

@@ -40,6 +40,8 @@ IF %%x == java (
 
 
 IF EXIST otapi\OTAPI-%%x.cxx     DEL                              otapi\OTAPI-%%x.cxx
+IF EXIST otapi\OTAPI_wrap.cxx    SED -i s/"OTAPI_wrap.h"/"OTAPI-%%x.h"/g "otapi\OTAPI_wrap.cxx"
+IF EXIST otapi\OTAPI_wrap.cxx    SED -i s/"otapi_wrap.h"/"OTAPI-%%x.h"/g "otapi\OTAPI_wrap.cxx"
 IF EXIST otapi\OTAPI_wrap.cxx    MOVE /Y   otapi\OTAPI_wrap.cxx   otapi\OTAPI-%%x.cxx
 IF EXIST otapi\OTAPI-%%x.cpp     DEL                              otapi\OTAPI-%%x.cpp
 IF EXIST otapi\OTAPI_wrap.cpp    MOVE /Y   otapi\OTAPI_wrap.cpp   otapi\OTAPI-%%x.cpp

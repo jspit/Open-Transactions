@@ -2583,7 +2583,7 @@ SWIG_AsVal_size_t (VALUE obj, size_t *val)
  * C++ director class methods
  * --------------------------------------------------- */
 
-#include "OTAPI_wrap.h"
+#include "OTAPI-ruby.h"
 
 SwigDirector_OTCallback::SwigDirector_OTCallback(VALUE self): OTCallback(), Swig::Director(self) {
   

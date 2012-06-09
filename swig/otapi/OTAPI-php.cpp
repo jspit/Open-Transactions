@@ -1738,7 +1738,7 @@ static swig_cast_info *swig_cast_initial[] = {
 
 /* end header section */
 
-#include "OTAPI-php.h"
+#include "OTAPI_wrap.h"
 
 SwigDirector_OTCallback::SwigDirector_OTCallback(zval *self TSRMLS_DC): OTCallback(), Swig::Director(self TSRMLS_CC) {
   

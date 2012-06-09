@@ -857,11 +857,10 @@ OT_API::~OT_API()
 // 
 bool OT_API::LoadConfigFile(const OTString & strMainPath)
 {	
-    const char * szFunc = "OT_API::LoadConfigFile";
-    
-	OTString strFilepath, strFilepathInput;
-	strFilepathInput.Format("%s%s%s", OTLog::ConfigPath(), OTLog::PathSeparator(), "client.cfg"); // todo: stop hardcoding.
-    OTLog::TransformFilePath(strFilepathInput.Get(), strFilepath);
+	const char * szFunc = "OT_API::LoadConfigFile";
+
+	OTString t = OTString("client.cfg");
+	OTString strFilepath = OTLog::RelativeDataPathToExact(t);
 	
 	{        
 		static CSimpleIniA ini; // We're assuming this file is on the path.
@@ -873,13 +872,12 @@ bool OT_API::LoadConfigFile(const OTString & strMainPath)
             // LOGFILE
             {
                 // Read a value from file: (category,	key )
-                const char * pVal1 = ini.GetValue("logging", "logfile_path"); // todo stop hardcoding.
+                const char * pVal1 = ini.GetValue("logging", "logfile_filename"); // todo stop hardcoding.
                 
                 if (NULL != pVal1)
                 {
-                    OTString strOutput;
-                    
-                    OTLog::TransformFilePath(pVal1, strOutput);
+					OTString t = OTString(pVal1);
+                    OTString strOutput = OTLog::RelativeDataPathToExact(t);
                     
                     if (strOutput.Exists())
                     {
@@ -1106,9 +1104,7 @@ bool OT_API::Init(OTString & strClientPath)
 //	OT_ASSERT_MSG(false == m_bInitialized, "OTAPI was already initialized, please do not call it twice.");
     // ---------------------------------------
 	
-    OTString strPATH_OUTPUT;
-    
-    OTLog::TransformFilePath(strClientPath.Get(), strPATH_OUTPUT);
+//    OTLog::TransformFilePath(strClientPath.Get(), strPATH_OUTPUT);
     
 //	OTLog::vError("**** OT_API::Init: strClientPath: %s   strPATH_OUTPUT: %s \n",
 //				  strClientPath.Get(), strPATH_OUTPUT.Get());
@@ -1118,9 +1114,8 @@ bool OT_API::Init(OTString & strClientPath)
 	 strPATH_OUTPUT:	/Users/au/Library/Application 
 	 */
 	
-	
 	// At some point, remove this, since each instance of OT API should eventually store its OWN path.
-	OTLog::SetMainPath(strPATH_OUTPUT.Get()); // This currently does NOT support multiple instances of OT_API.  :-(
+//	OTLog::SetMainPath(strPATH_OUTPUT.Get()); // This currently does NOT support multiple instances of OT_API.  :-(
 	// -------------------------------------
 	
 	static bool bConstruct = false;
@@ -1140,14 +1135,14 @@ bool OT_API::Init(OTString & strClientPath)
 		OT_ASSERT_MSG(NULL != m_pstrStoragePath, "Error allocating memory for m_pstrStoragePath in OT_API::Init");
 		OT_ASSERT_MSG(NULL != m_pstrWalletFilename, "Error allocating memory for m_pstrWalletFilename in OT_API::Init");
 		// ----------------------------		
-		LoadConfigFile(strPATH_OUTPUT);
+		LoadConfigFile(strClientPath);
 	}
 	
 	// Keep this though.
-	SetStoragePath(strPATH_OUTPUT); // sets m_pstrStoragePath
+	SetStoragePath(strClientPath); // sets m_pstrStoragePath
 
 	// -------------------------------------
-	std::string strPath = strPATH_OUTPUT.Get();
+	std::string strPath = strClientPath.Get();
 
 	// This way, everywhere else I can use the default storage context (for now) and it will work
 	// everywhere I put it. (Because it's now set up...)
@@ -1166,10 +1161,10 @@ bool OT_API::Init(OTString & strClientPath)
 			m_bInitialized = m_pClient->InitClient(*m_pWallet);
 			// -----------------------------
 			if (m_bInitialized)
-				OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc, strPATH_OUTPUT.Get());
+				OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc, strClientPath.Get());
 			else
 				OTLog::vError("%s: Failed invoking m_pClient->InitClient() with path: %s \n", 
-							  szFunc, strPATH_OUTPUT.Get());
+							  szFunc, strClientPath.Get());
 		}
 		return m_bInitialized;
 	}
