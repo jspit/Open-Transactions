@@ -335,14 +335,15 @@ OT_BOOL OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWallet
 
 	// -------------------------------------------
 	const char * szOldStoragePath = OT_API::It().GetStoragePath();
-	
+
 	OTString strOldStoragePath((NULL != szOldStoragePath) ? szOldStoragePath : "");	
 	// -------------------------------------------
     OTString strPATH_OUTPUT;
-    OTLog::TransformFilePath(szDataFolderPath, strPATH_OUTPUT);
 
-	// At some point, REMOVE this, since each instance of OT API should eventually store its OWN path.
-	OTLog::SetMainPath(strPATH_OUTPUT.Get());
+	OTString t = OTString(szDataFolderPath);
+	OTLog::SetExactOTPath(t);
+
+
 	// Keep this though.
 	OT_API::It().SetStoragePath(strPATH_OUTPUT); // Set to new path.
 	// -------------------------------------------
@@ -362,7 +363,7 @@ OT_BOOL OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWallet
 		
 		// Set back to OLD VALUES:
 		//
-		OTLog::SetMainPath(strOldStoragePath.Get());  // remove this at some point, todo. This is the old way of doing it.
+		// OTLog::SetMainPath(strOldStoragePath.Get());  // remove this at some point, todo. This is the old way of doing it.
 		OT_API::It().SetStoragePath(strOldStoragePath); // Set to old path again.	
 	}
 	

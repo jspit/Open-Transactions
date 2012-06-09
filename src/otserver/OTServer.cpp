@@ -1038,14 +1038,15 @@ bool OTServer::LoadConfigFile()
             // LOG FILE
             {
                 // Read a value from file: (category,	key )
-                //
-                const char * pVal1 = ini.GetValue("logging", "logfile_path"); // todo stop hardcoding.
+
+                const char * pVal1 = ini.GetValue("logging", "logfile_filename"); // todo stop hardcoding.
                 
                 if (NULL != pVal1)
                 {
-                    OTString strOutput;
-                    
-                    OTLog::TransformFilePath(pVal1, strOutput);
+					OTString strOutput;
+
+					OTString pVal(pVal1);
+					strOutput = OTLog::RelativeDataPathToExact(pVal);
 
                     if (strOutput.Exists())
                     {

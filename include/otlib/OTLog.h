@@ -200,8 +200,20 @@ EXPORT	static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it 
 	
     // Changes ~/blah to /Users/au/blah
     //
-EXPORT	static void TransformFilePath(const char * szInput, OTString & strOutput);
-    
+//EXPORT	static void TransformFilePath(const char * szInput, OTString & strOutput);
+
+	 // -------------------------------------------------
+
+
+EXPORT static bool FindUserDataLocation();
+EXPORT static bool FindOTDataLocation(OTString & strPathConfigFileExact, OTString & strKeyName);
+EXPORT static bool FindOTPath(OTString & strKeyName);
+EXPORT static bool FindOTPath(OTString & strKeyName, OTString & strOTDataFolderIniFileName);
+
+	 // -------------------------------------------------
+
+EXPORT static bool SetExactOTPath(OTString & strOTPathExact);
+
 EXPORT	static void LogToFile(const char * szOutput);
 
 	// --------------------------------------------------
@@ -224,10 +236,16 @@ EXPORT	static bool PushMemlogBack(const char * szLog);
 	
 EXPORT	static void SleepSeconds(long lSeconds);
 EXPORT	static void SleepMilliseconds(long lMilliseconds);
-	
+
+EXPORT	static OTString RelativeHomePathToExact(OTString & strRelativePath); // to $Home (example)
+EXPORT	static OTString RelativeDataPathToExact(OTString & strRelativePath);  // to $Home/.ot (example)
+EXPORT	static OTString RelativePathToExact(OTString & strRelativePath);  // to $Home/.ot/client_data (example)
+
+
 	// Used for making sure that certain necessary folders actually exist. (Creates them otherwise.)
 	// Creates inside Path(). IE:  <path>/szFolderName
 EXPORT	static bool ConfirmOrCreateFolder(const char * szFolderName);
+EXPORT	static bool ConfirmOrCreateExactFolder(const char * szFolderName);
 EXPORT	static bool ConfirmFile(const char * szFileName);
 EXPORT	static bool ConfirmExactPath(const char * szFileName); // This one expects fully-qualified path.
 	
@@ -236,8 +254,9 @@ EXPORT	static bool ConfirmExactPath(const char * szFileName); // This one expect
 	// Otherwise it's the client folder.
 	
 	// ------------------------------------------------------------
-	
+EXPORT static OTString OTPath();
 EXPORT	static const char *	Path();
+
 EXPORT	static const char *	PrefixPath();
 EXPORT	static const char *	ConfigPath();
 EXPORT	static const char *	PathSeparator();
@@ -246,7 +265,13 @@ EXPORT	static void SetMainPath(const char * szPath);
 EXPORT	static void SetConfigPath(const char * szConfigPath);
 EXPORT	static void SetPrefixPath(const char * szPrefixPath);
 EXPORT	static void SetPathSeparator(const char * szPathSeparator);
-	
+
+EXPORT static OTString GetUserDataPath();		//e.g.  $HOME
+EXPORT static const char * UserDataPath();
+
+EXPORT static OTString OTDataPath();			//e.g.  $HOME/.ot
+EXPORT static const char * DataPath();
+
 	// ------------------------------------------------------------
 	
 EXPORT	static const char *	CronFolder();

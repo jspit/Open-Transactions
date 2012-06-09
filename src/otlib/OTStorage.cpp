@@ -2718,103 +2718,15 @@ namespace OTDB
 	//
 	bool StorageFS::ConfirmOrCreateFolder(const char * szFolderName, struct stat * pst/*=NULL*/)
 	{
-		OT_ASSERT(NULL != szFolderName);
-		
-		if (m_strFullPath.size() < 1)
-		{
-			OTLog::vError("StorageFS::ConfirmOrCreateFolder: m_strFullPath is empty! (Failure.) While trying to confirm folder: %s\n",
-						  szFolderName);
-			return false;
-		}
-        OTString strFolderName(szFolderName);
-		// ---------------------------------------------
-		// DIRECTORY IS PRESENT?
-		struct stat st;
-		
-		if (NULL == pst)
-			pst = &st;
-		
-		OTString strPath;
-        
-        if (strFolderName.Compare("."))
-            strPath.Format("%s", GetFullPath());
-        else
-            strPath.Format("%s%s%s", GetFullPath(), PathSeparator(), szFolderName);
-		
-		OTString strPATH_OUTPUT;
-        OTLog::TransformFilePath(strPath.Get(), strPATH_OUTPUT);
-
-//		OTLog::vError("DEBUG Full path, separate, and szFolderName, all together: %s \n", strPath.Get());
-		
-		bool bDirIsPresent = (0 == stat(strPATH_OUTPUT.Get(), pst));
-		
-		// ----------------------------------------------------------------------------
-		
-		// IF NO, CREATE IT
-		if (!bDirIsPresent)
-		{
-#ifdef _WIN32
-			if (_mkdir(strPATH_OUTPUT.Get()) == -1) 
-#else
-				if (mkdir(strPATH_OUTPUT.Get(), 0700) == -1) // todo hardcoding of permissions.
-#endif
-				{
-					OTLog::vError("StorageFS::ConfirmOrCreateFolder: Unable to create %s.\n",
-								  strPATH_OUTPUT.Get());
-					return false;
-				}
-			
-			// Now we have created it, so let's check again...
-			bDirIsPresent = (0 == stat(strPATH_OUTPUT.Get(), pst));
-			
-			if (bDirIsPresent)
-				OTLog::vOutput(0, "Created folder: %s\n", strPATH_OUTPUT.Get());
-		}
-		
-		// ----------------------------------------------------------------------------
-		
-		// At this point if the folder still doesn't exist, nothing we can do. We
-		// already tried to create the folder, and SUCCEEDED, and then STILL failed 
-		// to find it (if this is still false.)
-		if (!bDirIsPresent)
-		{
-			OTLog::vError("StorageFS::ConfirmOrCreateFolder: Unable to find newly-created folder: %s\n", 
-						  strPATH_OUTPUT.Get());
-			return false;
-		}
-		
-		return true;
-	}	
+		return OTLog::ConfirmOrCreateFolder(szFolderName);
+	}
 	
 	// Returns true or false whether a specific file exists.
 	// Adds the main path prior to checking.
     //
 	bool StorageFS::ConfirmFile(const char * szFileName, struct stat * pst/*=NULL*/)
 	{
-		OT_ASSERT(NULL != szFileName);
-		
-		if (m_strFullPath.size() < 1)
-		{
-			OTLog::vError("StorageFS::ConfirmFile: m_strFullPath is empty! "
-                          "(Failure.) While trying to confirm file: %s\n",
-						  szFileName);
-			return false;
-		}
-		// ---------------------------------------
-		struct stat st;
-		
-		// FILE IS PRESENT?
-        //
-		if (NULL == pst)
-			pst = &st;
-		
-		OTString strPath;
-		strPath.Format("%s%s%s", GetFullPath(), PathSeparator(), szFileName);
-		
-		OTString strPATH_OUTPUT;
-        OTLog::TransformFilePath(strPath.Get(), strPATH_OUTPUT);
-
-		return (0 == stat(strPATH_OUTPUT.Get(), pst));
+		return OTLog::ConfirmFile(szFileName);
 	}
 	
 	/*
@@ -2833,128 +2745,65 @@ namespace OTDB
 	 
 	 */
 	long StorageFS::ConstructAndConfirmPath(      std::string & strOutput, 
-											const std::string & strFolder,      const std::string & oneStr/*=""*/,  
-											const std::string & twoStr/*=""*/,  const std::string & threeStr/*=""*/)
+		const std::string & strFolder,      const std::string & oneStr/*=""*/,  
+		const std::string & twoStr/*=""*/,  const std::string & threeStr/*=""*/)
 	{
-        
-        
-//        OTLog::vOutput(1, "StorageFS::ConstructAndConfirmPath:\n strFolder: %s\n oneStr: %s\n twoStr: %s\n threeStr: %s\n",
-//                      strFolder.c_str(), oneStr.c_str(), twoStr.c_str(), threeStr.c_str());
-        
-//      OT_ASSERT_MSG(!(strFolder.compare(".") == 0), "StorageFS::ConstructAndConfirmPath: !(strFolder.compare(\".\") == 0)\n");
-        
-		struct stat st;
-		
-		if (m_strFullPath.size() < 1)
-		{
-			OTLog::vError("StorageFS::ConstructAndConfirmPath: m_strFullPath is empty! "
-						  "(Failure.) While trying to confirm path segments: %s %s %s %s\n",
-						  strFolder.c_str(), oneStr.c_str(), twoStr.c_str(), threeStr.c_str());
-			return (-1);
-		}
-		
-//		OTLog::vError("DEBUG StorageFS::ConstructAndConfirmPath: m_strFullPath is %s and %s \n", m_strFullPath.c_str(), GetFullPath());
+		long lresult = 1;
 
-//		OTLog::vOutput(0, "DEBUG STORAGEFS 1: %s  and  %s \n", strFolder.c_str(), oneStr.c_str());
-		
-		if (strFolder.length() < 1)
-		{
-			// Must at least have a folder name and a file name.
-			OTLog::Error("StorageFS::ConstructAndConfirmPath: Folder has a zero length, unable to construct path.\n");
-			
-			return -1;
-		}
-		
-		// -----------------------------------------------------------------
-		
-		bool bConfirmed = false;
-		
-		if (oneStr.length() < 1) // strFolder is the Filename.
-		{
-			strOutput = strFolder.c_str();
-			bConfirmed = ConfirmFile(strFolder.c_str(), &st);	
-		}
-		else // There are more strings in the name after the folder...
-		{
-			strOutput = strFolder.c_str();
-			bool bConfirmMAINFolder = ConfirmOrCreateFolder(strFolder.c_str());
-			
-			if (!bConfirmMAINFolder)
-			{
-				OTLog::vError("StorageFS::ConstructAndConfirmPath: Unable to confirm or create folder: %s\n", strFolder.c_str());
-				return -1;
-			}
-			
-			// -----------------------------------------------------------------
-			
-			OTString strOnePath;
-			strOnePath.Format("%s%s%s", strFolder.c_str(), PathSeparator(),
-							  oneStr.c_str());
-			
-			// oneStr is the FILENAME. There are no other strings.
-			//
-			if (twoStr.length() < 1)
-			{
-				strOutput = strOnePath.Get();
-				bConfirmed = ConfirmFile(strOnePath.Get(), &st);
-			}
-			else // There are more strings.
-			{
-				strOutput = strOnePath.Get();
-				bool bConfirmFirstFolder = ConfirmOrCreateFolder(strOnePath.Get());
-				
-				if (!bConfirmFirstFolder)
-				{
-					OTLog::vError("StorageFS::ConstructAndConfirmPath: Unable to confirm or create folder: %s\n", strOnePath.Get());
-					return -1;
-				}
-				// -------------------
-				
-				OTString strTwoPath;
-				strTwoPath.Format("%s%s%s", strOnePath.Get(), PathSeparator(),
-								  twoStr.c_str());
-				
-				// twoStr is the FILENAME. There's no other strings.
-				if (threeStr.length() < 1)
-				{
-					strOutput = strTwoPath.Get();
-					bConfirmed = ConfirmFile(strTwoPath.Get(), &st);
-				}
-				else // There is one more string...
-				{
-					strOutput = strTwoPath.Get();
-					bool bConfirmSecondFolder = ConfirmOrCreateFolder(strTwoPath.Get());
-					
-					if (!bConfirmSecondFolder)
-					{
-						OTLog::vError("StorageFS::ConstructAndConfirmPath: Unable to confirm or create folder: %s\n", strTwoPath.Get());
-						return -1;
-					}
-					// -------------------
-					
-					OTString strThreePath;
-					strThreePath.Format("%s%s%s", strTwoPath.Get(), PathSeparator(),
-										threeStr.c_str());
-					
-					strOutput = strThreePath.Get();
-					bConfirmed = ConfirmFile(strThreePath.Get(), &st); // This may fail, that's okay.
-				}
-			}
-		}
-		// ------------------------
-		
-		OTString strFinalPath;
-		strFinalPath.Format("%s%s%s", GetFullPath(), PathSeparator(), strOutput.c_str());
-		
-		OTString strPATH_OUTPUT;
-        OTLog::TransformFilePath(strFinalPath.Get(), strPATH_OUTPUT);
+		OTString zero, one, two, three;
 
-		strOutput = strPATH_OUTPUT.Get();
-				
-		return bConfirmed ? static_cast<long>(st.st_size) : 0;
-	}
-	
-	
+		if (3 < strFolder.length())		zero = OTString(strFolder);
+		if (3 < oneStr.length())		one = OTString(oneStr);
+		if (3 < twoStr.length())		two = OTString(twoStr);
+		if (3 < threeStr.length())		three = OTString(threeStr);
+
+		OTString path, temp;
+
+		path.Set(OTLog::Path());
+
+		// We have nothing... So just return 0
+		if ((!zero.Exists()) && (!one.Exists()) && (!two.Exists()) && (!three.Exists())) return 0;
+
+		// Something exists... lets try them in order...
+
+		if (zero.Exists()){
+			path = OTLog::RelativePathToExact(zero);
+			if (!OTLog::ConfirmExactPath(path.Get())){
+				OTLog::ConfirmOrCreateExactFolder(path.Get());
+				lresult = 0;
+			}
+		}
+
+		if (one.Exists()){
+			temp = path;
+			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),one.Get());
+			if (!OTLog::ConfirmExactPath(path.Get())){
+				if (two.Exists()) OTLog::ConfirmOrCreateExactFolder(path.Get());
+				lresult = 0;
+			}
+		};
+
+		if (two.Exists()){
+			temp = path;
+			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),two.Get());
+			if (!OTLog::ConfirmExactPath(path.Get())){
+				if (three.Exists()) OTLog::ConfirmOrCreateExactFolder(path.Get());
+				lresult = 0;
+			}
+		};
+
+		if (three.Exists()){
+			temp = path;
+			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),three.Get());
+			if (!OTLog::ConfirmExactPath(path.Get())){
+				lresult = 0;
+			}
+		};
+		
+		strOutput = std::string(path.Get());
+		return lresult;
+	};
+
 	
 	// -----------------------------------------
 	// Store/Retrieve an object. (Storable.)
@@ -3209,10 +3058,23 @@ namespace OTDB
 		
 	}
 	
-	
+
+	bool StorageFS::Init_Basic(OTString strWalletFilename){
+
+		if (strWalletFilename.Exists()){ OTString strFullWalletFilename = OTLog::RelativePathToExact(strWalletFilename);
+
+		bool bWalletExists = OTLog::ConfirmExactPath(strFullWalletFilename.Get());
+		OT_ASSERT_MSG(bWalletExists, "StorageFS::Init_Basic: Unable To Loacate Wallet! Error!!");
+
+		}
+
+		m_strFullPath = OTLog::Path();
+		return true;
+	};
+
 	// ----------------------------------------------
 	//
-	// oneStr == Full path to data_folder
+	// oneStr == Full path to data_folder  (ignored for now).
 	// twoStr == Wallet.xml filename
 	//
 	// (Three,Four,Five,Six are UNUSED in StorageFS.)
@@ -3220,68 +3082,13 @@ namespace OTDB
 	bool StorageFS::Init(std::string oneStr/*=""*/,  std::string twoStr/*=""*/,  std::string threeStr/*=""*/, 
 						 std::string fourStr/*=""*/, std::string fiveStr/*=""*/, std::string sixStr/*=""*/)
 	{
-		// This is where I verify the directory path exists, and the wallet file within.
-		
-		if (oneStr.length() < 1) 
-		{
-			OTLog::Error("Expected a data_folder path, but it was empty.\n");
-			return false;
-		}
-		// --------------------------------
-		if ((NULL != threeStr.c_str()) && (NULL != fourStr.c_str()) && (NULL != fiveStr.c_str()) && (NULL != sixStr.c_str())){
-		OTLog::vOutput(1,	"StorageFS::Init: New path segments are:\n"
-							"	Path To Data Folder:	%s\n"
-							"	Wallet.xml Filename:	%s\n",
-							oneStr.c_str(), twoStr.c_str());
-		}
-		else{
-		OTLog::vOutput(1, "StorageFS::Init: New path segments are:%s-%s-%s-%s-%s\n", 
-					   oneStr.c_str(), twoStr.c_str(), threeStr.c_str(),
-					   fourStr.c_str(), fiveStr.c_str(), sixStr.c_str());
-		};
-		// --------------------------------
-		if (twoStr.length() < 1)
-			OTLog::Output(1, " (If calling from client API, make sure to call LoadWallet after this.) \n");
-		// --------------------------------
-        OTString strPATH_OUTPUT;
-        OTLog::TransformFilePath(oneStr.c_str(), strPATH_OUTPUT);
-		
-		bool bMainFolder = OTLog::ConfirmExactPath(strPATH_OUTPUT.Get());
-		
-		if (!bMainFolder)
-		{
-			OTLog::vError("Unable to locate data_folder: %s\n", strPATH_OUTPUT.Get());
-			return false;
-		}
-		else
-			m_strFullPath = strPATH_OUTPUT.Get();
-		// --------------------------------
-		// By this point, data_folder was successfully located.
-		
-		if (twoStr.length() > 0)
-		{
-			OTString strWalletFile;
-			strWalletFile.Format("%s%s%s", oneStr.c_str(), PathSeparator(), twoStr.c_str());
-			
-			OTString strWALLET_PATH;
-			OTLog::TransformFilePath(strWalletFile.Get(), strWALLET_PATH);
 
-			bool bWalletFile = OTLog::ConfirmExactPath(strWALLET_PATH.Get());
-			
-			if (!bWalletFile)
-			{
-				OTLog::vError("Unable to locate main file: %s\n", strWALLET_PATH.Get());
-				return false;
-			}
-			else
-				m_strWalletFile	= twoStr;			
-		}
-		// -----------------------------------
-				
-//		OTLog::vError("DEBUG StorageFS::Init: m_strFullPath is %s and %s \n", m_strFullPath.c_str(), GetFullPath());
-		
-		return true;
-	}
+		OT_ASSERT_MSG((oneStr.length() > 3), "StorageFS::Init: Path Too Short!  Error!!");
+//		OT_ASSERT_MSG((twoStr.length() > 3), "StorageFS::Init: Wallet Filename too Short! Error!!");
+		OT_ASSERT_MSG((OTLog::Path() == oneStr), "StorageFS::Init: OTLog::Path() should be set before running this command!");
+
+		return StorageFS::Init_Basic(twoStr);
+	};
 	
 	
 	// -----------------------------------------

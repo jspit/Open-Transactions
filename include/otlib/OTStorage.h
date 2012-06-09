@@ -1534,6 +1534,8 @@ namespace OTDB
 		// -----------------------------------------------------
 		
 	public:
+		virtual bool Init_Basic(OTString strWalletFilename);  // OTLog::Path must be first set to use this command
+
 		virtual bool Init(std::string oneStr="", std::string twoStr="", std::string threeStr="", 
 						  std::string fourStr="", std::string fiveStr="", std::string sixStr="");
 		
@@ -1541,6 +1543,7 @@ namespace OTDB
 		// See if the file is there.
 		virtual bool Exists(std::string strFolder, 
 							std::string oneStr="", std::string twoStr="", std::string threeStr="");
+
 		
 		// **********************************************************
 		
@@ -1554,7 +1557,7 @@ namespace OTDB
 		bool ConfirmOrCreateFolder(const char * szFolderName, struct stat *pst=NULL); // local to data_folder
 		bool ConfirmFile(const char * szFileName, struct stat *pst=NULL); // local to data_folder
 		
-		const char * GetFullPath() { return m_strFullPath.c_str(); }  // path to data_folder
+		const char * GetFullPath() { return OTLog::Path(); }  // path to data_folder
 		const char * GetWalletFile() { return m_strWalletFile.c_str(); } // wallet filename
 		
 		const char * PathSeparator();

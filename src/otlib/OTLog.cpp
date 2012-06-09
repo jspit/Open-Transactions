@@ -151,6 +151,7 @@
 #include <Shlobj.h>
 #endif
 
+#include "simpleini/SimpleIni.h"
 
 // ----------------------------------------
 // Use Win or Posix
@@ -302,6 +303,8 @@ static int __CurrentLogLevel = 0;
 
 // ---------------------------------------------------------------------------------
 // This is the "global" path to the subdirectories. The wallet file is probably also there.
+static OTString __UserData = "."; // it defaults to '.' but then it is set by the client and server.
+static OTString __OTData = "."; // it defaults to '.' but then it is set by the client and server.
 static OTString __OTPath = "."; // it defaults to '.' but then it is set by the client and server.
 static OTString	__OTConfigPath = ".";     // Path to the config files. (server.cfg, client.cfg, init_ot.cfg) Usually ~/.ot
 static OTString	__OTPrefixPath = ".";     // Prefix used during configure. "/usr/local" for example.
@@ -314,6 +317,9 @@ static OTString	__OTPrefixPath = ".";     // Prefix used during configure. "/usr
 // it on Windows.
 
 static OTString __OTPathSeparator = "/";
+
+
+
 	
 // Just a default value, since this is configurable programmatically.
 
@@ -360,7 +366,11 @@ static int     __latency_receive_ms = 5000; // number of ms to wait before retry
 static long	__minimum_market_scale = 1;	// Server admin can configure this to any higher power-of-ten.
 
 
+const char *	OTLog::PathSeparator()	{ return __OTPathSeparator.Get(); }
 
+const char * OTLog::UserDataPath() {return __UserData.Get();}
+const char * OTLog::DataPath() {return __OTData.Get();}
+const char * OTLog::Path() {return __OTPath.Get();}
 
 const char *	OTLog::Path()			{ return __OTPath.Get(); };
 const char *	OTLog::PrefixPath()			{ return __OTPrefixPath.Get(); };
@@ -372,6 +382,11 @@ void OTLog::SetPrefixPath(const char * szPrefixPath) { __OTPrefixPath.Set(szPref
 void OTLog::SetConfigPath(const char * szConfigPath) { __OTConfigPath.Set(szConfigPath); }
 void OTLog::SetPathSeparator(const char * szPathSeparator) { __OTPathSeparator.Set(szPathSeparator); }
 	
+bool OTLog::SetExactOTPath(OTString & strOTPathExact) {
+	__OTPath = strOTPathExact.Get();
+	return true;
+};
+
 	// ------------------------------------------------------------
 	
 const char *	OTLog::CronFolder()				{ return __OTCronFolder.Get(); }
@@ -1183,70 +1198,91 @@ void OTLog::SetupSignalHandler()
 
 // *********************************************************************************
 
+bool OTLog::FindUserDataLocation(){
 
+#ifdef _WIN32
+	TCHAR szPath[MAX_PATH];
 
+	if(SUCCEEDED(SHGetFolderPath(NULL, 
+		CSIDL_APPDATA|CSIDL_FLAG_CREATE, 
+		NULL, 
+		0, 
+		szPath))) ;
 
-
-// static
-// Changes ~/blah to /Users/au/blah
-//
-void OTLog::TransformFilePath(const char * szInput, OTString & strOutput)
-{
-    OT_ASSERT(NULL != szInput);
-    
-#ifndef _WIN32 // if UNIX (NOT windows)
-//	wordexp_t exp_result;
-//	
-//    exp_result.we_wordc = 0;
-//    exp_result.we_wordv = NULL;
-//    exp_result.we_offs  = 0;
-//    
-//	if (wordexp(szInput, &exp_result, 0))  // If non-zero, then failure.
-//	{
-//		OTLog::vError("%s: Error calling wordexp() to expand path.\n", __FUNCTION__);
-////		wordfree(&exp_result); 
-//		strOutput.Set(szInput);
-//		return;
-//	}
-//	// ----------------------------
-//	
-//	std::string str_Output("");
-//	
-//    if ((exp_result.we_wordc > 0) && (NULL != exp_result.we_wordv))
-//    {
-//        // wordexp tokenizes by space (as well as expands, which is why I'm using it.)
-//        // Therefore we need to iterate through the tokens, and create a single string
-//        // with spaces between the tokens.
-//        //
-//        int nCount = -1;
-//        
-//        for (unsigned int i = 0; (i < exp_result.we_wordc) && (exp_result.we_wordv[i] != NULL); ++i)
-//        {
-//            ++nCount; // 0 on first iteration.
-//            // ---------------
-//            str_Output += exp_result.we_wordv[i];
-//            
-//            if (static_cast<unsigned int>(nCount) < (exp_result.we_wordc)-1) // we don't add a space after the last one.
-//                str_Output += " ";
-//        }
-//        
-//        wordfree(&exp_result); 
-//    }
-//    
-//    if (str_Output.size() > 0)
-//        strOutput.Set(str_Output.c_str());
-//    else
-	
+#ifdef UNICODE
+	__UserData.Set(utf8util::UTF8FromUTF16(szPath));
+	return true;
 #else
-	strOutput.Set(szInput);
-#endif  
-}
+	__UserData.Set(szPath);
+	return true;
+#endif
 
+#else
+	__UserData.Set(getenv("HOME"));
+	return true;
+#endif
+};
 
 // *********************************************************************************
 
+bool OTLog::FindOTDataLocation(OTString & strPathConfigFileExact, OTString & strKeyName){
+	CSimpleIniA ini;
+	SI_Error rc = ini.LoadFile(strPathConfigFileExact.Get());
+	if (rc >=0)
+	{
+		const char * pOTFolder = ini.GetValue("otfolder", "ot_folder", ".ot"); // todo stop hardcoding.
+		const char * pOTData = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get()); // todo stop hardcoding.
+
+		if ((NULL != pOTFolder) || (NULL != pOTData))
+		{
+			__OTData.Format("%s%s%s", OTLog::UserDataPath(), OTLog::PathSeparator(), pOTFolder);
+			__OTPath.Format("%s%s%s", OTLog::DataPath(), OTLog::PathSeparator(), pOTData);
+			return true;
+		}         
+	}
+	return false;
+};
+
+bool OTLog::FindOTPath(OTString & strKeyName){
+
+	OTString strPathConfigFilename("ot_init.cfg");
+
+	return OTLog::FindOTPath(strKeyName, strPathConfigFilename);
+};
+
+bool OTLog::FindOTPath(OTString & strKeyName, OTString & strPathConfigFilename){
+
+	// Get AppData Location
+	bool bFindUserData = OTLog::FindUserDataLocation();
+	if (!bFindUserData) return false;
+	OTLog::vOutput(0, "GetOTServerDataPath: User App Data Path: %s\n", OTLog::UserDataPath());
+	//
+
+	// Let's First check if the .ot/ot_init.cfg is in the default folder, if so, lets set the .ot folder to it's location.
+
+	OTString strPathConfigFileExact;
+	strPathConfigFileExact.Format("%s%s%s%s%s",OTLog::UserDataPath(),OTLog::PathSeparator(),".ot",OTLog::PathSeparator(),strPathConfigFilename.Get());
+
+	bool bFindOTDataLocation = OTLog::FindOTDataLocation(strPathConfigFileExact, strKeyName);
+	if (bFindOTDataLocation) {
+	}
+	else {
+			__OTData.Format("%s%s%s", OTLog::UserDataPath(), OTLog::PathSeparator(), ".ot");
+			__OTPath.Format("%s%s%s", OTLog::DataPath(), OTLog::PathSeparator(), strKeyName.Get());
+	}
+
+	OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath());
+	OTLog::ConfirmOrCreateExactFolder(OTLog::Path());
+
+	return true;
+};
 
 
+
+
+
+
+// *********************************************************************************
 
 const char * OTLog::GetMemlogAtIndex(int nIndex)
 {
@@ -1580,7 +1616,7 @@ void OTLog::Output(int nVerbosity, OTString & strOutput)
 void OTLog::vOutput(int nVerbosity, const char *szOutput, ...)
 {
 	// If log level is 0, and verbosity of this message is 2, don't bother logging it.
-	if (((NULL != __CurrentLogLevel) && (nVerbosity > __CurrentLogLevel)) || (NULL == szOutput))
+	if (((0 != __CurrentLogLevel) && (nVerbosity > __CurrentLogLevel)) || (NULL == szOutput))
 		return; 
 	
 	va_list args;
@@ -1677,7 +1713,8 @@ void OTLog::vError(const char *szError, ...)
 	va_end(args);
 	
 	OTLog::Error(new_string);
-}
+};
+
 
 
 // NOTE: if you have problems compiling on certain platforms, due to the use
@@ -1717,6 +1754,39 @@ void  OTLog::Errno(const char * szLocation/*=NULL*/) // stderr
                       errnum);
 }
 
+OTString OTLog::RelativeHomePathToExact(OTString & strRelativePath){
+	OT_ASSERT_MSG(strRelativePath.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
+	OT_ASSERT_MSG(NULL != OTLog::UserDataPath(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
+
+	OTString strExactPath;
+	strExactPath.Format("%s%s%s", OTLog::UserDataPath(), OTLog::PathSeparator(), strRelativePath.Get());
+
+	return strExactPath;
+};
+
+
+OTString OTLog::RelativeDataPathToExact(OTString & strRelativePath){
+	OT_ASSERT_MSG(strRelativePath.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
+	OT_ASSERT_MSG(NULL != OTLog::DataPath(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
+
+	OTString strExactPath;
+	strExactPath.Format("%s%s%s", OTLog::DataPath(), OTLog::PathSeparator(), strRelativePath.Get());
+
+//	OTLog::vOutput(0, "OTLog::RelativeDataPathToExact(OTString & strRelativePath): %s\n", strExactPath.Get());
+
+	return strExactPath;
+};
+
+
+OTString OTLog::RelativePathToExact(OTString & strFolderName){
+	OT_ASSERT_MSG(strFolderName.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
+	OT_ASSERT_MSG(NULL != OTLog::Path(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
+
+	OTString strExactPath;
+	strExactPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), strFolderName.Get());
+
+	return strExactPath;
+};
 
 
 
@@ -1728,131 +1798,85 @@ void  OTLog::Errno(const char * szLocation/*=NULL*/) // stderr
 // folder creation will definitely fail on the sub-folder call (if the primary folder wasn't
 // already there, that is.)
 //
+
 bool OTLog::ConfirmOrCreateFolder(const char * szFolderName)
 {
 	OT_ASSERT_MSG(NULL != szFolderName, "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != szFolderName");
-	
-    OTString strFolderName(szFolderName);
-    
+
+	OTString t = OTString(szFolderName);
+
+	return  OTLog::ConfirmOrCreateExactFolder(OTLog::RelativePathToExact(t).Get());
+};
+
+bool OTLog::ConfirmOrCreateExactFolder(const char * szFolderName){
+	OT_ASSERT_MSG(NULL != szFolderName, "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != szFolderName");
+
+	OTString strPath(szFolderName);
+
 	// DIRECTORY IS PRESENT?
 	struct stat st;
-	
-	OTString strRawPath;
 
-		//const OTString * pOTPath = OTLog::OTPath();
-		//OTString OTPath = * pOTPath;
-		//OTLog::vOutput(0,	"OTLog::Path(): %s:%p\n",OTPath.Get(),pOTPath);
-
-	OTLog::vOutput(1,	"OTLog::Path(): %s\n",OTLog::Path());
-
-    if (strFolderName.Compare("."))
-        strRawPath.Format("%s", OTLog::Path());
-    else
-		OT_ASSERT_MSG(NULL != OTLog::Path(), "If Setting Full Path, Should Have Path Set!");
-
-		OTLog::vOutput(1, "OTLog::ConfirmOrCreateFolder: Formating Path with %s - %s - %s \n",
-                   OTLog::Path(), OTLog::PathSeparator(),strFolderName.Get());
-
-        strRawPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), strFolderName.Get());
-	
-//	OTLog::vError("**** Path: %s  Foldername: %s    Total: %s \n",
-//				  OTLog::Path(), szFolderName, strRawPath.Get());
-	/*ACTUAL OUTPUT:
-	 ****	Path: /Users/au/Library/Application  
-			Foldername: nyms
-			Total: "/Users/au/Library/Application/nyms" 
-
-	 */
-	
-    
-	OTString strPath;
-    OTLog::TransformFilePath(strRawPath.Get(), strPath);
-	
-    OTLog::vOutput(1, "OTLog::ConfirmOrCreateFolder: Transformed %s into %s \n",
-                   strRawPath.Get(), strPath.Get());
-    
 	bool bDirIsPresent = (0 == stat(strPath.Get(), &st));
-	
+
 	// ----------------------------------------------------------------------------
-	
+
 	// IF NO, CREATE IT
 	if (!bDirIsPresent)
 	{
 #ifdef _WIN32
 		if (_mkdir(strPath.Get()) == -1) 
 #else
-			if (mkdir(strPath.Get(), 0700) == -1) 
+		if (mkdir(strPath.Get(), 0700) == -1) 
 #endif
-			{
-				OTLog::vError("OTLog::ConfirmOrCreateFolder: Unable to create %s.\n",
-							  strPath.Get());
-				return false;
-			}
-		
+		{
+			OTLog::vError("OTLog::ConfirmOrCreateFolder: Unable to create %s.\n",
+				strPath.Get());
+			return false;
+		}
+
 		// Now we have created it, so let's check again...
 		bDirIsPresent = (0 == stat(strPath.Get(), &st));
-		
+
 		if (bDirIsPresent)
 			OTLog::vOutput(0, "Created folder: %s\n", strPath.Get());
 	}
-	
+
 	// ----------------------------------------------------------------------------
-	
+
 	// At this point if the folder still doesn't exist, nothing we can do. We
 	// already tried to create the folder, and SUCCEEDED, and then STILL failed 
 	// to find it (if this is still false.)
 	if (!bDirIsPresent)
 	{
 		OTLog::vError("OTLog::ConfirmOrCreateFolder: Unable to find newly-created folder: %s\n", 
-					  strPath.Get());
+			strPath.Get());
 		return false;
 	}
-	
 	return true;
-}	
+};
+
 
 // Returns true or false whether a specific file exists.
 // Adds the main path prior to checking.
 bool OTLog::ConfirmFile(const char * szFileName)
 {
 	OT_ASSERT(NULL != szFileName);
-	
-	OTString strFilename(szFileName);
-    
-	// FILE IS PRESENT?
-	struct stat st;
-	
-	OTString strRawPath;
-    
-    if (strFilename.Compare("."))
-        strRawPath.Format("%s", OTLog::Path());
-    else
-        strRawPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), szFileName);
-	
-	OTString strPath;
-    OTLog::TransformFilePath(strRawPath.Get(), strPath);
-
-	return (0 == stat(strPath.Get(), &st));
-}
+	OTString t = OTString(szFileName);
+	return OTLog::ConfirmExactPath(OTLog::RelativePathToExact(t).Get());
+};
 
 
 // Returns true or false whether a specific file exists.
 bool OTLog::ConfirmExactPath(const char * szFileName)
 {
 	OT_ASSERT(NULL != szFileName);
-	
     OTString strFilename(szFileName);
-    OT_ASSERT_MSG(!strFilename.Compare("."), "OTLog::ConfirmExactPath: ASSERT: !strFilename.Compare(\".\")\n");
-    
 
 	// FILE IS PRESENT?
 	struct stat st;
-	
-	OTString strPath;
-    OTLog::TransformFilePath(strFilename.Get(), strPath);
-	
-	return (0 == stat(strPath.Get(), &st));
-}
+
+	return (0 == stat(strFilename.Get(), &st));
+};
 
 
 

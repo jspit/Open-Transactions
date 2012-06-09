@@ -127,6 +127,16 @@
  **************************************************************/
 
 
+#define OT_OPTIONS_FILE_DEFAULT	"command-line-ot.opt"
+#define OT_PROMPT_HELPFILE "CLIENT-COMMANDS.txt"
+
+
+
+#define MAIN_PATH_DEFAULT	"client_data"
+
+#define CA_FILE             "certs/special/ca.crt"
+#define KEY_FILE            "certs/special/client.pem"
+
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -140,7 +150,14 @@
 #include <ostream>
 #include <iterator>
 
+#ifdef _WIN32
 #include <WinsockWrapper.h> 
+#endif
+
+#ifdef _WIN32
+#include <Shlobj.h>
+#endif
+
 
 extern "C" 
 {
@@ -1340,12 +1357,12 @@ void HandleCommandLineArguments( int argc, char* argv[], AnyOption * opt)
     /* 5. PROCESS THE COMMANDLINE AND RESOURCE FILE */
     
 	/* read options from a option/resource file with ':' separated options or flags, one per line */
-    OTString strIniRAWFileDefault, strIniFileDefault;
-    strIniRAWFileDefault.Format("%s%s%s", OTLog::ConfigPath(), OTLog::PathSeparator(), OT_OPTIONS_FILE_DEFAULT);
-    OTLog::TransformFilePath(strIniRAWFileDefault.Get(), strIniFileDefault);
-    
+
+	OTString t = OTString(OT_OPTIONS_FILE_DEFAULT);
+	OTString strIniFileExact = OTLog::RelativeDataPathToExact(t);
+
 	// -----------------------------------------------------
-    opt->processFile( strIniFileDefault.Get() );  
+    opt->processFile( strIniFileExact.Get() );  
 	// -----------------------------------------------------    
     opt->processCommandArgs( argc, argv );
 }
@@ -1467,11 +1484,6 @@ void CollectDefaultedCLValues(AnyOption *opt,
     }
 }
 
-
-
-
-
-
 // *************************************   MAIN FUNCTION   *************************************
 
 
@@ -1499,128 +1511,16 @@ int main(int argc, char* argv[])
     // twisted logic being necessary below, for that to happen.)
     //
     __OTclient_RAII   the_client_cleanup;
-    
-	// **************************************************************************
-	// The beginnings of an INI file!!
 
-//#define OT_FOLDER_DEFAULT   "~/.ot"
-//#define CLIENT_INI_FILE_DEFAULT	"ot_init.cfg"
+	// -------------------------------------------------------------------
 
-    OTString strIniRAWFileDefault, strIniFileDefault;
-    strIniRAWFileDefault.Format("%s%s%s", OTLog::ConfigPath(), OTLog::PathSeparator(), CLIENT_INI_FILE_DEFAULT);
-    OTLog::TransformFilePath(strIniRAWFileDefault.Get(), strIniFileDefault);
-    // -------------------------------------------------------------------
-    // 
-    //	
-    OTString 
-        strPath,        strRawPath(CLIENT_PATH_DEFAULT), 
-        strConfigPath,  strRawConfigPath(OTLog::ConfigPath()),
-        strPrefixPath,  strRawPrefixPath(OTLog::PrefixPath());
-	{
-		static CSimpleIniA ini;
-				
-		SI_Error rc = ini.LoadFile(strIniFileDefault.Get());
+	OTString strMainKeyDefault(MAIN_PATH_DEFAULT);
+	bool bFindOTPath = OTLog::FindOTPath(strMainKeyDefault);
+	OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
 
-		if (rc >=0)
-		{
-            {
-                const char * pVal = ini.GetValue("paths", "prefix_path", OTLog::PrefixPath()); // todo stop hardcoding.
-                
-                if (NULL != pVal)
-                {
-                    strRawPrefixPath.Set(pVal);
-                    OTLog::vOutput(1, "Reading the ini file (%s): \n      Found OT prefix_path: %s \n", 
-                                   strIniFileDefault.Get(), strRawPrefixPath.Get());
-                }
-                else
-                {
-                    strRawPrefixPath.Set(OTLog::PrefixPath());
-                    OTLog::vOutput(1, "There's no prefix_path in the ini file (%s).\n Therefore, using: %s \n", 
-                                   strIniFileDefault.Get(), strRawPrefixPath.Get());
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("paths", "init_path", OTLog::ConfigPath()); // todo stop hardcoding.
-                
-                if (NULL != pVal)
-                {
-                    strRawConfigPath.Set(pVal);
-                    OTLog::vOutput(1, "Reading the ini file (%s): \n      Found OT init_path: %s \n", 
-                                   strIniFileDefault.Get(), strRawConfigPath.Get());
-                }
-                else
-                {
-                    strRawConfigPath.Set(OTLog::ConfigPath());
-                    OTLog::vOutput(1, "There's no init_path in the ini file (%s).\n Therefore, using: %s \n", 
-                                   strIniFileDefault.Get(), strRawConfigPath.Get());
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("paths", "client_path", CLIENT_PATH_DEFAULT); // todo stop hardcoding.
-                
-                if (NULL != pVal)
-                {
-                    strRawPath.Set(pVal);
-                    OTLog::vOutput(1, "Reading the ini file (%s): \n      Found OT client_path: %s \n", 
-                                   strIniFileDefault.Get(), strRawPath.Get());
-                }
-                else
-                {
-                    strRawPath.Set(CLIENT_PATH_DEFAULT);
-                    OTLog::vOutput(1, "There's no client_data path in the ini file (%s).\n Therefore, using: %s \n", 
-                                   strIniFileDefault.Get(), strRawPath.Get());
-                }
-            }
-		}
-		else 
-		{
-			strRawPath.Set(CLIENT_PATH_DEFAULT);
-			strRawConfigPath.Set(OTLog::ConfigPath());
-			strRawPrefixPath.Set(OTLog::PrefixPath());
-			OTLog::vOutput(0, "Unable to load ini file (%s) to find client_data path. \n "
-                           "Will assume client_path: %s \n"
-                           "...and init_path:        %s \n", 
-                           "...and prefix_path:      %s \n", 
-						   strIniFileDefault.Get(), 
-                           strRawPath.Get(), 
-                           strRawConfigPath.Get(), 
-                           strRawPrefixPath.Get());
-		}
-	}
-	// **************************************************************************
+	OTString strOTPath(OTLog::Path());
 
-    OTLog::TransformFilePath(strRawPath.Get(),       strPath);
-    OTLog::TransformFilePath(strRawConfigPath.Get(), strConfigPath);
-    OTLog::TransformFilePath(strRawPrefixPath.Get(), strPrefixPath);
-    
-    // -------------------------------------------------------------------
-    OTLog::vOutput(2, "Attempting to use init_path: %s \n      Transformed from: %s\n", 
-                   strConfigPath.Get(), strRawConfigPath.Get());    
-
-    if (strConfigPath.Exists())
-    {   
-        OTLog::SetConfigPath(strConfigPath.Get());
-    }
-    // ---------
-    OTLog::vOutput(2, "Attempting to use prefix_path: %s \n      Transformed from: %s\n", 
-                   strPrefixPath.Get(), strRawPrefixPath.Get());
-    
-    if (strPrefixPath.Exists())
-    {   
-        OTLog::SetPrefixPath(strPrefixPath.Get());
-    }
-    // -------------------------------------------------------------------
-    // 
-    // OT context INIT...
-    //
-    // Theoretically in the future (we don't support it yet) there could be
-    // many instances of this object, even though there is only a single instance
-    // of the application. We'll get there.
-    //
-	OTLog::vOutput(2, "Attempting to use client_data path: %s \n      Transformed from: %s\n", 
-                   strPath.Get(), strRawPath.Get());
-
-    OT_API::It().Init(strPath);   
+	OT_API::It().Init(strOTPath);   
     
 	OTLog::vOutput(1, "Using client_data path:  %s\n", OTLog::Path());
     // -------------------------------------------------------------------
@@ -3276,12 +3176,11 @@ int main(int argc, char* argv[])
 		{
 			OTLog::Output(0, "User has instructed to display the help file...\n");
 			
-            OTString strRAWFileDefault, strFileDefault;
-            strRAWFileDefault.Format("%s%s%s", OTLog::ConfigPath(), OTLog::PathSeparator(), OT_PROMPT_HELPFILE);
-            OTLog::TransformFilePath(strRAWFileDefault.Get(), strFileDefault);
-            
+			OTString t = OTString(OT_PROMPT_HELPFILE);
+			OTString strFileDefaultExact = OTLog::RelativeDataPathToExact(t);
+
             OTString strResult;
-            strResult.Format("more %s", strFileDefault.Get());
+            strResult.Format("more %s", strFileDefaultExact.Get());
 			system(strResult.Get()); // todo security audit this in case of security issues.
 		            
 			continue;
