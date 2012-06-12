@@ -206,9 +206,12 @@ EXPORT	static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it 
 
 
 EXPORT static bool FindUserDataLocation();
-EXPORT static bool FindOTDataLocation(OTString & strPathConfigFileExact, OTString & strKeyName);
+EXPORT static bool FindOTDataLocation(OTString & strKeyName);
+EXPORT static bool FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFileExact);
 EXPORT static bool FindOTPath(OTString & strKeyName);
 EXPORT static bool FindOTPath(OTString & strKeyName, OTString & strOTDataFolderIniFileName);
+
+EXPORT static OTString GetCurrentWorkingPath();
 
 	 // -------------------------------------------------
 
@@ -240,6 +243,7 @@ EXPORT	static void SleepMilliseconds(long lMilliseconds);
 EXPORT	static OTString RelativeHomePathToExact(OTString & strRelativePath); // to $Home (example)
 EXPORT	static OTString RelativeDataPathToExact(OTString & strRelativePath);  // to $Home/.ot (example)
 EXPORT	static OTString RelativePathToExact(OTString & strRelativePath);  // to $Home/.ot/client_data (example)
+EXPORT	static OTString RelativeWorkingPathToExact(OTString & strRelativePath); // to $PWD (example)
 
 
 	// Used for making sure that certain necessary folders actually exist. (Creates them otherwise.)

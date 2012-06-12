@@ -3061,12 +3061,11 @@ namespace OTDB
 
 	bool StorageFS::Init_Basic(OTString strWalletFilename){
 
-		if (strWalletFilename.Exists()){ OTString strFullWalletFilename = OTLog::RelativePathToExact(strWalletFilename);
-
-		bool bWalletExists = OTLog::ConfirmExactPath(strFullWalletFilename.Get());
-		OT_ASSERT_MSG(bWalletExists, "StorageFS::Init_Basic: Unable To Loacate Wallet! Error!!");
-
-		}
+		if (strWalletFilename.Exists()){
+			OTString strFullWalletFilename = OTLog::RelativePathToExact(strWalletFilename);
+			bool bWalletExists = OTLog::ConfirmExactPath(strFullWalletFilename.Get());
+			OT_ASSERT_MSG(bWalletExists, "StorageFS::Init_Basic: Unable To Loacate Wallet! Error!!");
+		};
 
 		m_strFullPath = OTLog::Path();
 		return true;

@@ -153,6 +153,15 @@
 
 #include "simpleini/SimpleIni.h"
 
+#define OT_CONFIG_FILENAME "ot_init.cfg"
+
+#ifdef _WIN32
+#define OT_CONFIG_FOLDER "OpenTransactions"
+#else
+#define OT_CONFIG_FOLDER ".ot"
+#endif
+
+
 // ----------------------------------------
 // Use Win or Posix
 //
@@ -171,6 +180,12 @@
 // ----------------------------------------
 
 
+#include <direct.h>
+#ifdef _UNICODE
+	#define GetCurrentDir _wgetcwd
+#else
+	#define GetCurrentDir _getcwd
+#endif
 
 
 extern "C" 
@@ -178,7 +193,6 @@ extern "C"
 	
 #ifdef _WIN32
     
-#include <direct.h>
 #include <sys/timeb.h>
 
     // For signal handling in Windows.
@@ -224,6 +238,7 @@ struct sigcontext
 // ----------------------------------------
 
 #include <unistd.h>
+#define GetCurrentDir getcwd
 
 #endif // not _WIN32
 
@@ -1196,7 +1211,33 @@ void OTLog::SetupSignalHandler()
 
 #endif  // #if windows, #else (unix) #endif. (SIGNAL handling.)
 
+
 // *********************************************************************************
+
+OTString OTLog::GetCurrentWorkingPath(){
+
+#ifdef _WIN32
+
+	TCHAR * szPath;
+
+#else //Unix
+	char * szPath;
+#endif
+
+	bool r = ((szPath = GetCurrentDir(NULL,0)) == NULL);
+
+	OT_ASSERT(NULL != r);
+
+	OTString result;
+
+#ifdef UNICODE
+	result.Set(utf8util::UTF8FromUTF16(szPath));
+#else
+	result.Set(szPath);
+#endif
+	return result;
+};
+
 
 bool OTLog::FindUserDataLocation(){
 
@@ -1225,27 +1266,107 @@ bool OTLog::FindUserDataLocation(){
 
 // *********************************************************************************
 
-bool OTLog::FindOTDataLocation(OTString & strPathConfigFileExact, OTString & strKeyName){
-	CSimpleIniA ini;
-	SI_Error rc = ini.LoadFile(strPathConfigFileExact.Get());
-	if (rc >=0)
-	{
-		const char * pOTFolder = ini.GetValue("otfolder", "ot_folder", ".ot"); // todo stop hardcoding.
-		const char * pOTData = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get()); // todo stop hardcoding.
+bool OTLog::FindOTDataLocation(OTString & strKeyName){
+	OTString strPathConfigFileExact = NULL;
+	return OTLog::FindOTDataLocation(strKeyName,strPathConfigFileExact);
+};
 
-		if ((NULL != pOTFolder) || (NULL != pOTData))
-		{
-			__OTData.Format("%s%s%s", OTLog::UserDataPath(), OTLog::PathSeparator(), pOTFolder);
-			__OTPath.Format("%s%s%s", OTLog::DataPath(), OTLog::PathSeparator(), pOTData);
-			return true;
-		}         
+
+bool OTLog::FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFileExact){
+	CSimpleIniA ini;
+	SI_Error rc = SI_FAIL;
+	const char * pOTPathDir;
+
+	// Lets load the supplied configuration file, it is ezists.
+	if (strPathConfigFileExact.Exists())
+		if (OTLog::ConfirmExactPath(strPathConfigFileExact.Get())){
+			rc = ini.LoadFile(strPathConfigFileExact.Get());  // load supplied configuration file
+		}
+		else
+			OTLog::vOutput(0, "OTLog::FindOTDataLocation: File: %s  Dosn't Exist\n", strPathConfigFileExact.Get());
+	else
+		OTLog::vOutput(0, "OTLog::FindOTDataLocation: No explicit Configuration File Set... Using Default\n");
+
+	// RC is in a good state... lets use this one.
+	if (rc >= 0){
+		const char * pOTDataPathDir;
+		bool bOTDataPathDirExact;
+
+		pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
+		bOTDataPathDirExact = ini.GetBoolValue("paths", "ot_data_is_path_exact", false);  // exact path to the OT Data Dir
+		pOTDataPathDir = ini.GetValue("paths", "ot_data_path", NULL);  // exact path to the OT Data Dir
+
+		if (NULL != pOTDataPathDir){
+			// Set OTDataPath to exact loctaion speicifed in the configuration.
+			OTString strOTDataPathDir = OTString(pOTDataPathDir);
+			if (!bOTDataPathDirExact)
+				__OTData = OTLog::RelativeWorkingPathToExact(strOTDataPathDir);
+			else
+				__OTData = strOTDataPathDir;
+
+			OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath()); //  Lets make the folder if it dosn't exist already.
+		}
+		else
+			OTLog::vOutput(0, "OTLog::FindOTDataLocation: OT Data Path Not Set... Using Default\n");
 	}
-	return false;
+
+	// RC is in a error state... lets load config from the default location
+	else{
+		OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath()); //  Lets make the folder if it dosn't exist already.
+
+		// Setup default OT config path.
+		OTString configFilename = OTString(OT_CONFIG_FILENAME);
+		strPathConfigFileExact = OTLog::RelativeDataPathToExact(configFilename);
+
+		// If the config file exists... lets try opening it...
+		if (OTLog::ConfirmExactPath(strPathConfigFileExact.Get())){
+			rc = ini.LoadFile(strPathConfigFileExact.Get());
+			pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
+		};
+	};
+
+	// Set keyname for key of wether the path it relative or not.
+	OTString strKeyRel;
+	strKeyRel.Format("%s_is_relative_to_ot_dir",strKeyName.Get());
+
+	// Lets make the configuration file since if it didn't load or don't have the path...
+	if ((rc < 0) || ini.IsEmpty() || (NULL == pOTPathDir)){
+		ini.SetBoolValue("paths",strKeyRel.Get(),true,NULL,true);
+		ini.SetValue("paths",strKeyName.Get(),strKeyName.Get(),NULL,true);
+		ini.SaveFile(strPathConfigFileExact.Get(),false);
+	};
+
+	// Reset ini... as we are going to re-load it.
+	ini.Reset();
+
+	// Lets Load the configuration file... if it dosn't load now, throw an error.
+	OTLog::vOutput(0, "OTLog::FindOTDataLocation: Loading File: %s  \n", strPathConfigFileExact.Get());
+	bool bload = OTLog::ConfirmExactPath(strPathConfigFileExact.Get());
+	if (bload) rc = ini.LoadFile(strPathConfigFileExact.Get());
+	else
+		OT_ASSERT_MSG(bload, "OTLog::FindOTDataLocation: Assert failed: Load of Config Failed, cannot find file");
+
+	// Lets Load the values fromt he configuration file.
+	OT_ASSERT_MSG(rc >=0, "OTLog::FindOTDataLocation: Assert failed: Unable to load config file, file unloadable");
+	bool bOTPathDirRel = ini.GetBoolValue("paths",strKeyRel.Get(),true,false);
+	pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
+
+	// Lets set the OT Path.
+	OT_ASSERT_MSG(NULL != pOTPathDir, "OTLog::FindOTDataLocation: Assert failed: Path Not in Configuration!");
+	OTString strOTPathDir = OTString(pOTPathDir);
+	if (bOTPathDirRel)
+		__OTPath = OTLog::RelativeDataPathToExact(strOTPathDir);
+	else
+		__OTPath = strOTPathDir;
+
+	OTLog::ConfirmOrCreateExactFolder(OTLog::Path()); //  Lets make the path folder if it dosn't exist already.
+
+	return true;
 };
 
 bool OTLog::FindOTPath(OTString & strKeyName){
 
-	OTString strPathConfigFilename("ot_init.cfg");
+	OTString strPathConfigFilename = NULL;
 
 	return OTLog::FindOTPath(strKeyName, strPathConfigFilename);
 };
@@ -1257,19 +1378,21 @@ bool OTLog::FindOTPath(OTString & strKeyName, OTString & strPathConfigFilename){
 	if (!bFindUserData) return false;
 	OTLog::vOutput(0, "GetOTServerDataPath: User App Data Path: %s\n", OTLog::UserDataPath());
 	//
+	// Setting __OTData to default for now.
+	OTString t = OTString(OT_CONFIG_FOLDER);
+	__OTData = OTLog::RelativeHomePathToExact(t);
 
 	// Let's First check if the .ot/ot_init.cfg is in the default folder, if so, lets set the .ot folder to it's location.
+	bool bFindOTDataLocation;
 
-	OTString strPathConfigFileExact;
-	strPathConfigFileExact.Format("%s%s%s%s%s",OTLog::UserDataPath(),OTLog::PathSeparator(),".ot",OTLog::PathSeparator(),strPathConfigFilename.Get());
-
-	bool bFindOTDataLocation = OTLog::FindOTDataLocation(strPathConfigFileExact, strKeyName);
-	if (bFindOTDataLocation) {
+	if (strPathConfigFilename.Exists()){
+		OTString strPathConfigFileExact = OTLog::RelativeWorkingPathToExact(strPathConfigFilename);
+		bFindOTDataLocation = OTLog::FindOTDataLocation(strKeyName,strPathConfigFileExact);
 	}
-	else {
-			__OTData.Format("%s%s%s", OTLog::UserDataPath(), OTLog::PathSeparator(), ".ot");
-			__OTPath.Format("%s%s%s", OTLog::DataPath(), OTLog::PathSeparator(), strKeyName.Get());
+	else{
+		bFindOTDataLocation = OTLog::FindOTDataLocation(strKeyName);
 	}
+		
 
 	OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath());
 	OTLog::ConfirmOrCreateExactFolder(OTLog::Path());
@@ -1778,12 +1901,22 @@ OTString OTLog::RelativeDataPathToExact(OTString & strRelativePath){
 };
 
 
-OTString OTLog::RelativePathToExact(OTString & strFolderName){
-	OT_ASSERT_MSG(strFolderName.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
+OTString OTLog::RelativePathToExact(OTString & strRelativePath){
+	OT_ASSERT_MSG(strRelativePath.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
 	OT_ASSERT_MSG(NULL != OTLog::Path(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
 
 	OTString strExactPath;
-	strExactPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), strFolderName.Get());
+	strExactPath.Format("%s%s%s", OTLog::Path(), OTLog::PathSeparator(), strRelativePath.Get());
+
+	return strExactPath;
+};
+
+OTString OTLog::RelativeWorkingPathToExact(OTString & strRelativePath){
+	OT_ASSERT_MSG(strRelativePath.Exists(), "OTLog::RelativePathToExact: Assert failed: NULL != strFolderName");
+	OT_ASSERT_MSG(NULL != OTLog::UserDataPath(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
+
+	OTString strExactPath;
+	strExactPath.Format("%s%s%s", OTLog::GetCurrentWorkingPath(), OTLog::PathSeparator(), strRelativePath.Get());
 
 	return strExactPath;
 };
