@@ -145,7 +145,9 @@ using namespace irr;
 using namespace io;
 using namespace std;
 
-
+#define SERVER_CONFIG_FILENAME "server.cfg"
+#define SERVER_LOGFILE_FILENAME "log-server.log"
+#define SERVER_MASTER_KEY_TIMEOUT_DEFAULT -1
 
 #include "simpleini/SimpleIni.h"
 
@@ -1003,257 +1005,317 @@ bool OTServer::SaveMainFile()
 
 
 
+
 #define OT_SVR_CONFIG_OPT_BOOL(CATEGORY_STR, OPTION_STR, STATIC_VAR_NAME) \
 { \
 	const char * pVal = ini.GetValue((CATEGORY_STR), (OPTION_STR)); \
 	\
-	if (NULL != pVal) \
-	{ \
-		const std::string strVal(pVal); \
-		const bool bResult = (0 == strVal.compare("true")); \
-		\
-		OTLog::vOutput(1, "Setting %s %s to: %s \n", \
-					   (CATEGORY_STR), (OPTION_STR), \
-					   bResult ? "true" : "false");  \
-		OTServer::STATIC_VAR_NAME = bResult; \
-	} \
+	if (NULL == pVal) \
+		{ \
+		pVal = STATIC_VAR_NAME ? "true" : "false"; \
+		ini.SetValue((CATEGORY_STR), (OPTION_STR),pVal); \
+		}; \
+	const std::string strVal(pVal); \
+	const bool bResult = (0 == strVal.compare("true")); \
+	\
+	OTLog::vOutput(0, "Setting %s %s to:	%s \n", \
+				   (CATEGORY_STR), (OPTION_STR), \
+				   bResult ? "true" : "false");  \
+	OTServer::STATIC_VAR_NAME = bResult; \
 }
 
 
 bool OTServer::LoadConfigFile()
 {	
-    const char * szFunc = "OTServer::LoadConfigFile";
-    
-	OTString strFilepath, strFilepathInput;
-	strFilepathInput.Format("%s%s%s", OTLog::ConfigPath(), OTLog::PathSeparator(), "server.cfg"); // todo: stop hardcoding.
-    OTLog::TransformFilePath(strFilepathInput.Get(), strFilepath);
-    
-	{
-		CSimpleIniA ini; // We're assuming this file is on the path.
-		SI_Error rc = ini.LoadFile(strFilepath.Get());  
-		
-		if (rc >=0)
-		{	
-            // ---------------------------------------------
-            // LOG FILE
-            {
-                // Read a value from file: (category,	key )
+	CSimpleIniA ini; // We're assuming this file is on the path.
+	SI_Error rc;
 
-                const char * pVal1 = ini.GetValue("logging", "logfile_filename"); // todo stop hardcoding.
-                
-                if (NULL != pVal1)
-                {
-					OTString strOutput;
+	OTString strServerConfigFilename = OTString(SERVER_CONFIG_FILENAME);  // todo: stop hardcoding
+	OTString strServerConfigFilePath = OTLog::RelativePathToExact(strServerConfigFilename);
 
-					OTString pVal(pVal1);
-					strOutput = OTLog::RelativeDataPathToExact(pVal);
+	// check if config file exists:
+	if (!OTLog::ConfirmExactPath(strServerConfigFilePath.Get())){
+		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",strServerConfigFilePath.Get());
+		ini.SaveFile(strServerConfigFilePath.Get(),false);
+		ini.Reset();
+	};
 
-                    if (strOutput.Exists())
-                    {
-                        OTLog::vOutput(1, "Setting logfile: %s\n", strOutput.Get());
-                        OTLog::SetLogfile(strOutput.Get());
-                    }
-                }
-                else
-                    OTLog::vOutput(1, "Current Logfile: %s\n", OTLog::Logfile());
-                
-                // ---------------------------------------------
-                // LOG LEVEL
-                const char * pVal2 = ini.GetValue("logging", "log_level"); // todo stop hardcoding.
-                
-                if (NULL != pVal2)
-                {
-                    OTLog::vOutput(1, "Setting log level: %d\n", atoi(pVal2));
-                    OTLog::SetLogLevel(atoi(pVal2));
-                }
-                else
-                    OTLog::vOutput(1, "Current log level: %d\n", OTLog::GetLogLevel());
-            }
-            // ---------------------------------------------
-            // CRON
-            {
-                const char * pVal = ini.GetValue("cron", "refill_trans_number");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting cron refill_trans_number: %d\n", atoi(pVal));
-                    OTCron::SetCronRefillAmount(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("cron", "ms_between_cron_beats");
-                
-                if ((NULL != pVal) && (atol(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting cron ms_between_cron_beats: %ld\n", atol(pVal));
-                    OTCron::SetCronMsBetweenProcess(atol(pVal));
-                }
-            }
-            // -----------------------------------
-			// HEARTBEAT
-            {
-                const char * pVal = ini.GetValue("heartbeat", "no_requests");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting heartbeat_no_requests: %d\n", atoi(pVal));
-                    OTServer::SetHeartbeatNoRequests(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("heartbeat", "ms_between_beats");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting heartbeat ms_between_beats: %d\n", atoi(pVal));
-                    OTServer::SetHeartbeatMsBetweenBeats(atoi(pVal));
-                }
-            }
-            // -----------------------------------
-            // LATENCY
-            {
-                const char * pVal = ini.GetValue("latency", "blocking");
-                
-                if (NULL != pVal)
-                {
-					const OTString strBlocking(pVal);
-					const bool bBlocking = strBlocking.Compare("true") ? true : false;
-					
-                    OTLog::vOutput(1, "Setting latency blocking: %s\n",
-								   bBlocking ? "true" : "false");
-                    OTLog::SetBlocking(bBlocking);
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "send_fail_no_tries");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency send_fail_no_tries: %d\n", atoi(pVal));
-                    OTLog::SetLatencySendNoTries(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "send_fail_max_ms");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency send_fail_max_ms: %d\n", atoi(pVal));
-                    OTLog::SetLatencySendMs(atoi(pVal));
-                }
-            }
-            // ------------------------------------------------
-            // LATENCY (RECEIVING)
-            {
-                const char * pVal = ini.GetValue("latency", "recv_fail_no_tries");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency recv_fail_no_tries: %d\n", atoi(pVal));                    
-                    OTLog::SetLatencyReceiveNoTries(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "recv_fail_max_ms");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency recv_fail_max_ms: %d\n", atoi(pVal));
-                    OTLog::SetLatencyReceiveMs(atoi(pVal));
-                }
-            }
-            // ----------------------------------------------------------------
-			// PERMISSIONS
-            {
-                const char * pVal = ini.GetValue("permissions", "override_nym_id");
-                
-                if (NULL != pVal)
-                {
-					const std::string strVal(pVal);
-                    OTLog::vOutput(1, "Setting permissions override_nym_id: %s\n", strVal.c_str());
-                    OTServer::SetOverrideNymID(strVal);
-                }
-            }
-            // ---------------------------------------------
-			// MARKETS
-            {
-                const char * pVal = ini.GetValue("markets", "minimum_scale");
-                long lScale = 0;
-                if ((NULL != pVal) && (lScale = atol(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting markets minimum_scale: %ld\n", lScale);
-                    OTLog::SetMinMarketScale(lScale);
-                }
-            }
-            // ---------------------------------------------
-			// SECURITY (beginnings of..)
-            {
-                const char * pVal = ini.GetValue("security", "master_key_timeout");
-                int nTimeout = 0;
-                if (NULL != pVal)
-                {
-                    nTimeout = atoi(pVal);
-                    OTLog::vOutput(1, "Setting security master_key_timeout: %d\n", nTimeout);
-                    OTMasterKey::It()->SetTimeoutSeconds(nTimeout);
-                }
-            }
-			// ---------------------------------------------
-			// (#defined right above this function.)
-			//
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "admin_usage_credits",		__admin_usage_credits);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "admin_server_locked",		__admin_server_locked);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_usage_credits",			__cmd_usage_credits);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_issue_asset",			__cmd_issue_asset);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_contract",			__cmd_get_contract);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_check_server_id",		__cmd_check_server_id);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_create_user_acct",		__cmd_create_user_acct);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_del_user_acct",			__cmd_del_user_acct);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_check_user",				__cmd_check_user);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_request",			__cmd_get_request);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_trans_num",			__cmd_get_trans_num);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_send_message",			__cmd_send_message);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_nymbox",				__cmd_get_nymbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_process_nymbox",			__cmd_process_nymbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_create_asset_acct",		__cmd_create_asset_acct);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_del_asset_acct",			__cmd_del_asset_acct);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_acct",				__cmd_get_acct);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_inbox",				__cmd_get_inbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_outbox",				__cmd_get_outbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_process_inbox",			__cmd_process_inbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_issue_basket",			__cmd_issue_basket);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_exchange_basket",	__transact_exchange_basket);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_notarize_transaction",	__cmd_notarize_transaction);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_process_inbox",		__transact_process_inbox);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_transfer",			__transact_transfer);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdrawal",		__transact_withdrawal);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit",			__transact_deposit);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdraw_voucher",	__transact_withdraw_voucher);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit_cheque",	__transact_deposit_cheque);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_mint",				__cmd_get_mint);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdraw_cash",		__transact_withdraw_cash);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit_cash",		__transact_deposit_cash);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_list",		__cmd_get_market_list);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_offers",		__cmd_get_market_offers);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_recent_trades",__cmd_get_market_recent_trades);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_nym_market_offers",	__cmd_get_nym_market_offers);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_market_offer",		__transact_market_offer);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_payment_plan",		__transact_payment_plan);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_cancel_cron_item",	__transact_cancel_cron_item);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_smart_contract",	__transact_smart_contract);
-			OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_trigger_clause",			__cmd_trigger_clause);
-			
-			// ---------------------------------------------
-		}
-        else
-        {
-            const int nRc = static_cast<int>(rc);
-            OTLog::vError("%s: Failed loading file: %s\n With SI_ERROR: %d.\n", szFunc,
-                          strFilepath.Get(), nRc);
-            if ((-3) == nRc)
-                OTLog::Errno(szFunc);
-        }
-	}
-	
+	rc = ini.LoadFile(strServerConfigFilePath.Get());
+
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable");
+
+
+	// ---------------------------------------------
+	// LOG FILE
+	OTString strLogFilename, strLogFile;
+
+	const char * pLogFilename = ini.GetValue("logging", "log_filename",NULL);
+	if (NULL != pLogFilename) strLogFilename = OTString(pLogFilename);
+	else {
+		strLogFilename = OTString(SERVER_LOGFILE_FILENAME);
+		ini.SetValue("logging", "log_filename",strLogFilename.Get(),NULL,true);
+	};
+
+	strLogFile = OTLog::RelativePathToExact(strLogFilename);
+
+	OTLog::vOutput(0,"Setting OTLog: Logfile to:	%s\n",strLogFile.Get());
+
+	OTLog::SetLogfile(strLogFile.Get());
+
+
+	// ---------------------------------------------
+	// LOG LEVEL
+
+	int iLogLevel;
+	const char * pLogLevel = ini.GetValue("logging", "log_level",NULL);
+
+	if (NULL == pLogLevel) {
+		iLogLevel = 0;
+		ini.SetLongValue("logging", "log_level",iLogLevel,NULL,true);
+	};
+
+	iLogLevel = (int) ini.GetLongValue("logging", "log_level",NULL);
+	OTLog::vOutput(0,"Setting OTLog: LogLevel to:			%d\n",iLogLevel);
+	OTLog::SetLogLevel(iLogLevel);
+
+
+	// ---------------------------------------------
+	// CRON
+	int iCronRefillAmount;
+	int iCronMsBetweenProcess;
+
+	const char * pCronRefillAmount = ini.GetValue("cron", "refill_trans_number",NULL);
+	const char * pCronMsBetweenProcess = ini.GetValue("cron", "ms_between_cron_beats",NULL);
+
+	if (NULL == pCronRefillAmount){
+		iCronRefillAmount = 500;  // Todo: stop hardcoding
+		ini.SetLongValue("cron", "refill_trans_number",iCronRefillAmount,NULL,true);
+	};
+
+	if (NULL == pCronMsBetweenProcess){
+		iCronMsBetweenProcess = 10000;
+		ini.SetLongValue("cron", "ms_between_cron_beats",iCronMsBetweenProcess,NULL,true);
+	};
+
+	iCronRefillAmount = (int) ini.GetLongValue("cron", "refill_trans_number",NULL);
+	iCronMsBetweenProcess = (int) ini.GetLongValue("cron", "ms_between_cron_beats",NULL);
+
+	OTLog::vOutput(0,"Setting Cron: CronRefillAmount to:		%d\n",iCronRefillAmount);
+	OTLog::vOutput(0,"Setting Cron: CronMsBetweenProcess to:		%d\n",iCronMsBetweenProcess);
+
+	OTCron::SetCronRefillAmount(iCronRefillAmount);
+	OTCron::SetCronMsBetweenProcess(iCronMsBetweenProcess);
+
+
+	// -----------------------------------
+	// HEARTBEAT
+
+	int iHeartbeatNoRequests;
+	int iHeartbeatMsBetweenBeats;
+
+	const char * pHeartbeatNoRequests = ini.GetValue("heartbeat", "no_requests",NULL);
+	const char * pHeartbeatMsBetweenBeats = ini.GetValue("heartbeat", "ms_between_beats",NULL);
+
+	if (NULL == pHeartbeatNoRequests){
+		iHeartbeatNoRequests = 10;  // Todo: stop hardcoding
+		ini.SetLongValue("heartbeat", "no_requests",iHeartbeatNoRequests,NULL,false,true);
+	};
+
+	if (NULL == pHeartbeatMsBetweenBeats){
+		iHeartbeatMsBetweenBeats = 100;  // Todo: stop hardcoding
+		ini.SetLongValue("heartbeat", "ms_between_beats",iHeartbeatMsBetweenBeats,NULL,false,true);
+	};
+
+	iHeartbeatNoRequests = (int) ini.GetLongValue("heartbeat", "no_requests",NULL);
+	iHeartbeatMsBetweenBeats = (int) ini.GetLongValue("heartbeat", "ms_between_beats",NULL);
+
+	OTLog::vOutput(0,"Setting OTServer: HeartbeatNoRequests to:		%d\n",iHeartbeatNoRequests);
+	OTLog::vOutput(0,"Setting OTServer: HeartbeatMsBetweenBeats to:		%d\n",iHeartbeatMsBetweenBeats);
+
+	OTServer::SetHeartbeatNoRequests(iHeartbeatNoRequests);
+	OTServer::SetHeartbeatMsBetweenBeats(iHeartbeatMsBetweenBeats);
+
+
+	// -----------------------------------
+	// LATENCY
+
+	// Is Blocking?
+	const char * pBlocking = ini.GetValue("latency", "blocking",NULL);
+
+	if (NULL == pBlocking) {
+		pBlocking = OTLog::IsBlocking() ? "true" : "false";
+		ini.SetValue("latency", "blocking",pBlocking,NULL,true);
+	};
+
+	const std::string strBlocking(pBlocking);
+	const bool bBlocking = (0 == strBlocking.compare("true"));
+
+	OTLog::vOutput(0, "Setting OTLog: Blocking to:				%s\n", bBlocking ? "true" : "false");
+	OTLog::SetBlocking(bBlocking);
+
+	// -----------------------------------
+
+	int iLatencySendNoTries;
+	int iLatencySendMs;
+
+	const char * pLatencySendNoTries = ini.GetValue("latency", "send_fail_no_tries",NULL);
+	const char * pLatencySendMs = ini.GetValue("latency", "send_fail_max_ms",NULL);
+
+	if (NULL == pLatencySendNoTries){
+		iLatencySendNoTries = OTLog::GetLatencySendNoTries();
+		ini.SetLongValue("latency", "send_fail_no_tries",iLatencySendNoTries,NULL,false,true);
+	};
+
+	if (NULL == pLatencySendMs){
+		iLatencySendMs = OTLog::GetLatencySendMs();
+		ini.SetLongValue("latency", "send_fail_max_ms",iLatencySendMs,NULL,false,true);
+	};
+
+	iLatencySendNoTries = (int) ini.GetLongValue("latency", "send_fail_no_tries",NULL);
+	iLatencySendMs = (int) ini.GetLongValue("latency", "send_fail_max_ms",NULL);
+
+	OTLog::vOutput(0, "Setting OTLog: LatencySendNoTries to:		%d\n", iLatencySendNoTries);
+	OTLog::vOutput(0, "Setting OTLog: LatencySendMs to:		%d\n", iLatencySendMs);
+
+	OTLog::SetLatencySendNoTries(iLatencySendNoTries);
+	OTLog::SetLatencySendMs(iLatencySendMs);
+
+
+	// ------------------------------------------------
+	// LATENCY (RECEIVING)
+
+	int iLatencyReceiveNoTries;
+	int iLatencyReceiveMs;
+
+	const char * pLatencyReceiveNoTries = ini.GetValue("latency", "recv_fail_no_tries",NULL);
+	const char * pLatencyReceiveMs =  ini.GetValue("latency", "recv_fail_max_ms",NULL);
+
+	if (NULL == pLatencyReceiveNoTries){
+		iLatencyReceiveNoTries = OTLog::GetLatencySendNoTries();
+		ini.SetLongValue("latency", "recv_fail_no_tries",iLatencyReceiveNoTries,NULL,false,true);
+	};
+
+	if (NULL == pLatencyReceiveMs) {
+		iLatencyReceiveMs = OTLog::GetLatencySendMs();
+		ini.SetLongValue("latency", "recv_fail_max_ms",iLatencyReceiveMs,NULL,false,true);
+	};
+
+	iLatencyReceiveNoTries = (int) ini.GetLongValue("latency", "recv_fail_no_tries",NULL);
+	iLatencyReceiveMs = (int) ini.GetLongValue("latency", "recv_fail_max_ms",NULL);
+
+	OTLog::vOutput(0, "Setting OTLog: LatencyReceiveNoTries to:		%d\n", iLatencyReceiveNoTries);
+	OTLog::vOutput(0, "Setting OTLog: LatencyReceiveMs to:		%d\n", iLatencyReceiveMs);
+
+	OTLog::SetLatencyReceiveNoTries(iLatencyReceiveNoTries);
+	OTLog::SetLatencyReceiveMs(iLatencyReceiveMs);
+
+	// ----------------------------------------------------------------
+	// PERMISSIONS
+
+	const char * pOverrideNymID = ini.GetValue("permissions", "override_nym_id",NULL);
+
+	if (NULL == pOverrideNymID){
+
+		std::string stdstrOverrideNymID = OTServer::GetOverrideNymID();
+		pOverrideNymID = stdstrOverrideNymID.c_str();
+
+		if (NULL == stdstrOverrideNymID.c_str())
+			ini.SetValue("permissions", "override_nym_id",NULL);
+		else
+			ini.SetValue("permissions", "override_nym_id",pOverrideNymID);
+
+		ini.SetValue("permissions", "override_nym_id",stdstrOverrideNymID.c_str());
+	};
+
+	OTLog::vOutput(0, "Setting OTServer: OverrideNymID to:		%s\n", pOverrideNymID);
+
+	OTServer::SetOverrideNymID(pOverrideNymID);
+
+	// ---------------------------------------------
+	// MARKETS
+
+	long iMinMarketScale;
+	const char * pMinMarketScale = ini.GetValue("markets", "minimum_scale",NULL);
+
+	if (NULL == pMinMarketScale){
+		iMinMarketScale = OTLog::GetMinMarketScale();
+		ini.SetLongValue("markets", "minimum_scale",iMinMarketScale,NULL,false,true);
+	};
+
+	iMinMarketScale = ini.GetLongValue("markets", "minimum_scale",NULL);
+
+	OTLog::vOutput(0, "Setting OTLog: MinMarketScale to:		%d\n", iMinMarketScale);
+
+	OTLog::SetMinMarketScale(iMinMarketScale);
+
+	// ---------------------------------------------
+	// SECURITY (beginnings of..)
+
+	int iTimeoutSeconds;
+	const char * pTimeoutSeconds = ini.GetValue("security", "master_key_timeout");
+
+	if (NULL == pTimeoutSeconds){
+		iTimeoutSeconds = SERVER_MASTER_KEY_TIMEOUT_DEFAULT;
+		ini.SetLongValue("security", "master_key_timeout",iTimeoutSeconds,NULL,false,true);
+	};
+
+	iTimeoutSeconds = (int) ini.GetLongValue("security", "master_key_timeout");
+
+	OTLog::vOutput(0, "Setting OTMasterKey: TimeoutSeconds to:		%d\n", iTimeoutSeconds);
+
+	OTMasterKey::It()->SetTimeoutSeconds(iTimeoutSeconds);
+
+
+	// ---------------------------------------------
+	// (#defined right above this function.)
+	//
+
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "admin_usage_credits",		__admin_usage_credits);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "admin_server_locked",		__admin_server_locked);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_usage_credits",			__cmd_usage_credits);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_issue_asset",			__cmd_issue_asset);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_contract",			__cmd_get_contract);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_check_server_id",		__cmd_check_server_id);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_create_user_acct",		__cmd_create_user_acct);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_del_user_acct",			__cmd_del_user_acct);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_check_user",				__cmd_check_user);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_request",			__cmd_get_request);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_trans_num",			__cmd_get_trans_num);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_send_message",			__cmd_send_message);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_nymbox",				__cmd_get_nymbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_process_nymbox",			__cmd_process_nymbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_create_asset_acct",		__cmd_create_asset_acct);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_del_asset_acct",			__cmd_del_asset_acct);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_acct",				__cmd_get_acct);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_inbox",				__cmd_get_inbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_outbox",				__cmd_get_outbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_process_inbox",			__cmd_process_inbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_issue_basket",			__cmd_issue_basket);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_exchange_basket",	__transact_exchange_basket);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_notarize_transaction",	__cmd_notarize_transaction);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_process_inbox",		__transact_process_inbox);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_transfer",			__transact_transfer);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdrawal",		__transact_withdrawal);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit",			__transact_deposit);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdraw_voucher",	__transact_withdraw_voucher);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit_cheque",	__transact_deposit_cheque);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_mint",				__cmd_get_mint);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_withdraw_cash",		__transact_withdraw_cash);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_deposit_cash",		__transact_deposit_cash);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_list",		__cmd_get_market_list);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_offers",		__cmd_get_market_offers);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_market_recent_trades",__cmd_get_market_recent_trades);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_get_nym_market_offers",	__cmd_get_nym_market_offers);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_market_offer",		__transact_market_offer);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_payment_plan",		__transact_payment_plan);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_cancel_cron_item",	__transact_cancel_cron_item);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "transact_smart_contract",	__transact_smart_contract);
+	OT_SVR_CONFIG_OPT_BOOL("permissions", "cmd_trigger_clause",			__cmd_trigger_clause);
+
+	// Done Loading... Lets save any changes...
+
+	ini.SaveFile(strServerConfigFilePath.Get(),false);
+
 	return true;
 }
 
