@@ -859,7 +859,7 @@ bool OT_API::LoadConfigFile(const OTString & strMainPath)
 {	
 	const char * szFunc = "OT_API::LoadConfigFile";
 
-	OTString t = OTString("client.cfg");
+	OTString t("client.cfg");
 	OTString strFilepath = OTLog::RelativeDataPathToExact(t);
 	
 	{        
@@ -876,7 +876,7 @@ bool OT_API::LoadConfigFile(const OTString & strMainPath)
                 
                 if (NULL != pVal1)
                 {
-					OTString t = OTString(pVal1);
+					OTString t(pVal1);
                     OTString strOutput = OTLog::RelativeDataPathToExact(t);
                     
                     if (strOutput.Exists())
