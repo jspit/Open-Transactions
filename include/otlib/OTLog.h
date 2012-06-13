@@ -251,6 +251,7 @@ EXPORT	static OTString RelativeWorkingPathToExact(OTString & strRelativePath); /
 EXPORT	static bool ConfirmOrCreateFolder(const char * szFolderName);
 EXPORT	static bool ConfirmOrCreateExactFolder(const char * szFolderName);
 EXPORT	static bool ConfirmFile(const char * szFileName);
+EXPORT	static bool ConfirmExactFile(const char * szFileName);
 EXPORT	static bool ConfirmExactPath(const char * szFileName); // This one expects fully-qualified path.
 	
 	// OTPath is where all the subdirectories can be found.

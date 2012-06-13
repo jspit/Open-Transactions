@@ -340,7 +340,7 @@ OT_BOOL OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWallet
 	// -------------------------------------------
     OTString strPATH_OUTPUT;
 
-	OTString t = OTString(szDataFolderPath);
+	OTString t(szDataFolderPath);
 	OTLog::SetExactOTPath(t);
 
 

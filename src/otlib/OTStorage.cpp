@@ -2748,60 +2748,62 @@ namespace OTDB
 		const std::string & strFolder,      const std::string & oneStr/*=""*/,  
 		const std::string & twoStr/*=""*/,  const std::string & threeStr/*=""*/)
 	{
-		long lresult = 1;
-
 		OTString zero, one, two, three;
 
-		if (3 < strFolder.length())		zero = OTString(strFolder);
-		if (3 < oneStr.length())		one = OTString(oneStr);
-		if (3 < twoStr.length())		two = OTString(twoStr);
-		if (3 < threeStr.length())		three = OTString(threeStr);
+		if (!strFolder.empty()){   // Do we have anytihng at all?
+			if (3 < strFolder.length()){ zero = OTString(strFolder); }  // Two or more characher, that's a name!
+			else{
+				OTString strZeroTemp = strFolder.c_str();
+				if (strZeroTemp.Compare(".")) zero = strZeroTemp;   // Single Dot, lets catch that and pass it throogh.
+			};
+		};
+
+		if (3 < oneStr.length())		one = oneStr.c_str();
+		if (3 < twoStr.length())		two = twoStr.c_str();
+		if (3 < threeStr.length())		three = threeStr.c_str();
 
 		OTString path, temp;
 
 		path.Set(OTLog::Path());
 
-		// We have nothing... So just return 0
-		if ((!zero.Exists()) && (!one.Exists()) && (!two.Exists()) && (!three.Exists())) return 0;
+		// We have nothing... So just return error!
+		if ((!zero.Exists()) && (!one.Exists()) && (!two.Exists()) && (!three.Exists())) return -1;
 
 		// Something exists... lets try them in order...
-
-		if (zero.Exists()){
-			path = OTLog::RelativePathToExact(zero);
-			if (!OTLog::ConfirmExactPath(path.Get())){
-				OTLog::ConfirmOrCreateExactFolder(path.Get());
-				lresult = 0;
-			}
-		}
-
-		if (one.Exists()){
-			temp = path;
-			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),one.Get());
-			if (!OTLog::ConfirmExactPath(path.Get())){
-				if (two.Exists()) OTLog::ConfirmOrCreateExactFolder(path.Get());
-				lresult = 0;
-			}
-		};
-
-		if (two.Exists()){
-			temp = path;
-			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),two.Get());
-			if (!OTLog::ConfirmExactPath(path.Get())){
-				if (three.Exists()) OTLog::ConfirmOrCreateExactFolder(path.Get());
-				lresult = 0;
-			}
-		};
-
-		if (three.Exists()){
-			temp = path;
-			path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),three.Get());
-			if (!OTLog::ConfirmExactPath(path.Get())){
-				lresult = 0;
-			}
-		};
 		
-		strOutput = std::string(path.Get());
-		return lresult;
+		if (zero.Exists()){  
+			if (zero.Compare(".")) path = OTLog::OTPath();  // if "." use path...
+			else path = OTLog::RelativePathToExact(zero);   // otherwise add dir to path.
+			strOutput = path.Get();  // set output path.
+
+			OTLog::ConfirmOrCreateExactFolder(path.Get());
+			if (!one.Exists()) return 0;  // nothing more to do.
+		}
+		else return -1;  // no root path... that is an error.
+
+
+		// One Exists... adding it to the path.
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),one.Get());
+		strOutput = path.Get();  // set output path.
+		if (!two.Exists()){
+			if (OTLog::ConfirmExactFile(path.Get())) return 1; else return 0; }
+		else	OTLog::ConfirmOrCreateExactFolder(path.Get());  // make a folder for the next level...
+
+
+		// Two Exists... adding it to the path.
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),two.Get());
+		strOutput = path.Get();  // set output path.
+		if (!three.Exists()){ if (OTLog::ConfirmExactFile(path.Get())) return 1; else return 0;	}
+		else OTLog::ConfirmOrCreateExactFolder(path.Get());  // make a folder for the next level...
+
+
+		// Three Exists... adding it to the path.
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),three.Get());
+		strOutput = path.Get();  // set output path.
+		if (OTLog::ConfirmExactFile(path.Get())) return 1;
+		else return 0; // We don't want to create a directory for a file.
+		// if we get here... we have an error.
+		return -1;
 	};
 
 	

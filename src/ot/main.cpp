@@ -1358,7 +1358,7 @@ void HandleCommandLineArguments( int argc, char* argv[], AnyOption * opt)
     
 	/* read options from a option/resource file with ':' separated options or flags, one per line */
 
-	OTString t = OTString(OT_OPTIONS_FILE_DEFAULT);
+	OTString t(OT_OPTIONS_FILE_DEFAULT);
 	OTString strIniFileExact = OTLog::RelativeDataPathToExact(t);
 
 	// -----------------------------------------------------
@@ -3176,7 +3176,7 @@ int main(int argc, char* argv[])
 		{
 			OTLog::Output(0, "User has instructed to display the help file...\n");
 			
-			OTString t = OTString(OT_PROMPT_HELPFILE);
+			OTString t(OT_PROMPT_HELPFILE);
 			OTString strFileDefaultExact = OTLog::RelativeDataPathToExact(t);
 
             OTString strResult;

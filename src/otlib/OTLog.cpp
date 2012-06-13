@@ -140,6 +140,16 @@
 #include <iostream>
 #include <exception>
 #include <stdexcept>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifndef S_ISDIR
+#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#endif
+
+#ifndef S_ISREG
+#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+#endif
 
 #include <string> // The C++ one 
 
@@ -179,12 +189,13 @@
 #endif
 // ----------------------------------------
 
-
+#ifdef _WIN32
 #include <direct.h>
 #ifdef _UNICODE
 	#define GetCurrentDir _wgetcwd
 #else
 	#define GetCurrentDir _getcwd
+#endif
 #endif
 
 
@@ -386,6 +397,7 @@ const char *	OTLog::PathSeparator()	{ return __OTPathSeparator.Get(); }
 const char * OTLog::UserDataPath() {return __UserData.Get();}
 const char * OTLog::DataPath() {return __OTData.Get();}
 const char * OTLog::Path() {return __OTPath.Get();}
+OTString OTLog::OTPath() {return __OTPath;}
 
 const char *	OTLog::Path()			{ return __OTPath.Get(); };
 const char *	OTLog::PrefixPath()			{ return __OTPrefixPath.Get(); };
@@ -1224,9 +1236,9 @@ OTString OTLog::GetCurrentWorkingPath(){
 	char * szPath;
 #endif
 
-	bool r = ((szPath = GetCurrentDir(NULL,0)) == NULL);
+	bool r = ((szPath = GetCurrentDir(NULL,0)) == 0);
 
-	OT_ASSERT(NULL != r);
+	OT_ASSERT(0 != r);
 
 	OTString result;
 
@@ -1267,7 +1279,7 @@ bool OTLog::FindUserDataLocation(){
 // *********************************************************************************
 
 bool OTLog::FindOTDataLocation(OTString & strKeyName){
-	OTString strPathConfigFileExact = NULL;
+	OTString strPathConfigFileExact = "NULL";
 	return OTLog::FindOTDataLocation(strKeyName,strPathConfigFileExact);
 };
 
@@ -1315,7 +1327,7 @@ bool OTLog::FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFi
 		OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath()); //  Lets make the folder if it dosn't exist already.
 
 		// Setup default OT config path.
-		OTString configFilename = OTString(OT_CONFIG_FILENAME);
+		OTString configFilename(OT_CONFIG_FILENAME);
 		strPathConfigFileExact = OTLog::RelativeDataPathToExact(configFilename);
 
 		// If the config file exists... lets try opening it...
@@ -1353,7 +1365,7 @@ bool OTLog::FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFi
 
 	// Lets set the OT Path.
 	OT_ASSERT_MSG(NULL != pOTPathDir, "OTLog::FindOTDataLocation: Assert failed: Path Not in Configuration!");
-	OTString strOTPathDir = OTString(pOTPathDir);
+	OTString strOTPathDir(pOTPathDir);
 	if (bOTPathDirRel)
 		__OTPath = OTLog::RelativeDataPathToExact(strOTPathDir);
 	else
@@ -1379,7 +1391,7 @@ bool OTLog::FindOTPath(OTString & strKeyName, OTString & strPathConfigFilename){
 	OTLog::vOutput(0, "GetOTServerDataPath: User App Data Path: %s\n", OTLog::UserDataPath());
 	//
 	// Setting __OTData to default for now.
-	OTString t = OTString(OT_CONFIG_FOLDER);
+	OTString t(OT_CONFIG_FOLDER);
 	__OTData = OTLog::RelativeHomePathToExact(t);
 
 	// Let's First check if the .ot/ot_init.cfg is in the default folder, if so, lets set the .ot folder to it's location.
@@ -1916,7 +1928,7 @@ OTString OTLog::RelativeWorkingPathToExact(OTString & strRelativePath){
 	OT_ASSERT_MSG(NULL != OTLog::UserDataPath(), "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != OTLog::Path()");
 
 	OTString strExactPath;
-	strExactPath.Format("%s%s%s", OTLog::GetCurrentWorkingPath(), OTLog::PathSeparator(), strRelativePath.Get());
+	strExactPath.Format("%s%s%s", OTLog::GetCurrentWorkingPath().Get(), OTLog::PathSeparator(), strRelativePath.Get());
 
 	return strExactPath;
 };
@@ -1936,7 +1948,7 @@ bool OTLog::ConfirmOrCreateFolder(const char * szFolderName)
 {
 	OT_ASSERT_MSG(NULL != szFolderName, "OTLog::ConfirmOrCreateFolder: Assert failed: NULL != szFolderName");
 
-	OTString t = OTString(szFolderName);
+	OTString t(szFolderName);
 
 	return  OTLog::ConfirmOrCreateExactFolder(OTLog::RelativePathToExact(t).Get());
 };
@@ -1994,8 +2006,33 @@ bool OTLog::ConfirmOrCreateExactFolder(const char * szFolderName){
 bool OTLog::ConfirmFile(const char * szFileName)
 {
 	OT_ASSERT(NULL != szFileName);
-	OTString t = OTString(szFileName);
-	return OTLog::ConfirmExactPath(OTLog::RelativePathToExact(t).Get());
+	OTString t(szFileName);
+	return OTLog::ConfirmExactFile(OTLog::RelativePathToExact(t).Get());
+};
+
+// Returns true or false whether a specific file exists.
+// Adds the main path prior to checking.
+bool OTLog::ConfirmExactFile(const char * szFileName)
+{
+	OT_ASSERT(NULL != szFileName);
+	OTString t(szFileName);
+
+	if (!OTLog::ConfirmExactPath(szFileName)) return false;
+
+	int status;
+#ifdef _WIN32
+	struct _stat st_buf;
+	char filename[4086];
+	strcpy_s(filename,szFileName);
+	status = _stat(filename, &st_buf );
+#else
+	struct stat st_buf;
+	status = stat (szFileName, &st_buf);
+#endif
+
+	if( status != 0 ) return false;
+	else if (S_ISREG(st_buf.st_mode)) return true;
+	else return false;
 };
 
 
