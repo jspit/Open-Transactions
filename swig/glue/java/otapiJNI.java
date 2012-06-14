@@ -91,7 +91,7 @@ public class otapiJNI {
   public final static native void OTCaller_callOne(long jarg1, OTCaller jarg1_);
   public final static native void OTCaller_callTwo(long jarg1, OTCaller jarg1_);
   public final static native boolean OT_API_Set_PasswordCallback(long jarg1, OTCaller jarg1_);
-  public final static native int OT_API_Init(String jarg1);
+  public final static native int OT_API_Init();
   public final static native int OT_API_LoadWallet(String jarg1);
   public final static native int OT_API_SwitchWallet(String jarg1, String jarg2);
   public final static native void OT_API_Output(int jarg1, String jarg2);

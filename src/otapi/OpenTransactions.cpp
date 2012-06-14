@@ -202,7 +202,11 @@ using namespace tthread;
 #include "OTPayment.h"
 
 
+#define CLIENT_CONFIG_FILENAME "client.cfg"
+#define CLIENT_LOGFILE_FILENAME "log-client.log"
+#define CLIENT_MASTER_KEY_TIMEOUT_DEFAULT 300
 
+#define MAIN_PATH_DEFAULT	"client_data"
 
 // -------------------------------------------------------------------------
 // When the server and client (this API being a client) are built in XmlRpc/HTTP
@@ -855,139 +859,94 @@ OT_API::~OT_API()
 
 // Load the configuration file.
 // 
-bool OT_API::LoadConfigFile(const OTString & strMainPath)
-{	
-	const char * szFunc = "OT_API::LoadConfigFile";
+bool OT_API::LoadConfigFile()
+{
+	SI_Error rc = SI_FAIL;
 
-	OTString t("client.cfg");
-	OTString strFilepath = OTLog::RelativeDataPathToExact(t);
+	OTString strClientConfigFilename = OTString(CLIENT_CONFIG_FILENAME);  // todo: stop hardcoding
+	OTString strClientConfigFilePath = OTLog::RelativePathToExact(strClientConfigFilename);
+
+	// check if config file exists:
+	if (!OTLog::ConfirmExactFile(strClientConfigFilePath.Get())){
+		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",strClientConfigFilePath.Get());
+
+		rc = OTLog::SaveConfiguration(strClientConfigFilePath);
+		OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to save new configuration file!");
+
+		OTLog::ResetConfiguration(); // Reset Config... we are going to try reloading it.
+	};
+
+	// Load, this time it must work... or else fail.
+	rc = OTLog::LoadConfiguration(strClientConfigFilePath);
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable");
+
+
+	// ---------------------------------------------
+	// LOG FILE
+	OTString strLogFilename, strLogFile;
+
+	OTLog::CheckSetConfig("logging","log_filename",CLIENT_LOGFILE_FILENAME,strLogFilename);
+
+	strLogFile = OTLog::RelativePathToExact(strLogFilename);
+	OTLog::SetLogfile(strLogFile.Get());
+
+	// ---------------------------------------------
+	// LOG LEVEL
+	long lLogLevel;
+	OTLog::CheckSetConfig("logging","log_level",0,lLogLevel);
+	OTLog::SetLogLevel((int)lLogLevel);
+
+	// -----------------------------------
+	// LATENCY
+
+	bool bBlocking;
+	OTLog::CheckSetBoolConfig("latency","blocking",OTLog::IsBlocking(),bBlocking);
+	OTLog::SetBlocking(bBlocking);
 	
-	{        
-		static CSimpleIniA ini; // We're assuming this file is on the path.
-		SI_Error rc = ini.LoadFile(strFilepath.Get());  
-		
-		if (rc >=0)
-		{	
-            // ---------------------------------------------
-            // LOGFILE
-            {
-                // Read a value from file: (category,	key )
-                const char * pVal1 = ini.GetValue("logging", "logfile_filename"); // todo stop hardcoding.
-                
-                if (NULL != pVal1)
-                {
-					OTString t(pVal1);
-                    OTString strOutput = OTLog::RelativeDataPathToExact(t);
-                    
-                    if (strOutput.Exists())
-                    {
-                        OTLog::vOutput(1, "Setting logfile: %s\n", strOutput.Get());
-                        OTLog::SetLogfile(strOutput.Get());
-                    }
-                }
-                else
-                    OTLog::vOutput(1, "Current logfile is: %s\n", OTLog::Logfile());
-                // ---------------------------------------------
-                // LOG LEVEL
-                //
-                const char * pVal2 = ini.GetValue("logging", "log_level"); // todo stop hardcoding.
-                
-                if (NULL != pVal2)
-                {
-                    OTLog::vOutput(1, "Setting log level: %d\n", atoi(pVal2));
-                    OTLog::SetLogLevel(atoi(pVal2));
-                }
-                else
-                    OTLog::vOutput(1, "Current log level is: %d\n", OTLog::GetLogLevel());
-            }
-            // ---------------------------------------------
-            // LATENCY 
-			{
-                const char * pVal = ini.GetValue("latency", "blocking");
-                
-                if (NULL != pVal)
-                {
-					const OTString strBlocking(pVal);
-					const bool bBlocking = strBlocking.Compare("true") ? true : false;
-					
-                    OTLog::vOutput(1, "Setting latency blocking: %s\n",
-								   bBlocking ? "true" : "false");
-                    OTLog::SetBlocking(bBlocking);
-                }
-            }
-            // ------------------------------------------------
-            // LATENCY (SENDING)
-            {
-                const char * pVal = ini.GetValue("latency", "send_delay_after");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency send_delay_after: %d\n", atoi(pVal));
-                    OTLog::SetLatencyDelayAfter(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "send_fail_no_tries");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency send_fail_no_tries: %d\n", atoi(pVal));
-                    OTLog::SetLatencySendNoTries(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "send_fail_max_ms");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency send_fail_max_ms: %d\n", atoi(pVal));
-                    OTLog::SetLatencySendMs(atoi(pVal));
-                }
-            }
-            // ------------------------------------------------
-            // LATENCY (RECEIVING)
-            {
-                const char * pVal = ini.GetValue("latency", "recv_fail_no_tries");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency recv_fail_no_tries: %d\n", atoi(pVal));                    
-                    OTLog::SetLatencyReceiveNoTries(atoi(pVal));
-                }
-            }
-            {
-                const char * pVal = ini.GetValue("latency", "recv_fail_max_ms");
-                
-                if ((NULL != pVal) && (atoi(pVal)))
-                {
-                    OTLog::vOutput(1, "Setting latency recv_fail_max_ms: %d\n", atoi(pVal));
-                    OTLog::SetLatencyReceiveMs(atoi(pVal));
-                }
-            }
-            // ----------------------------------------------------------------
-			// SECURITY (beginnings of..)
-            {
-                const char * pVal = ini.GetValue("security", "master_key_timeout");
-                int nTimeout = 0;
-                if (NULL != pVal)
-                {
-                    nTimeout = atoi(pVal);
-                    OTLog::vOutput(1, "Setting security master_key_timeout: %d\n", nTimeout);
-                    OTMasterKey::It()->SetTimeoutSeconds(nTimeout);
-                }
-            }
-            // ----------------------------------------------------------------
-		}
-        else
-        {
-            const int nRc = static_cast<int>(rc);
-            OTLog::vError("%s: Failed loading file: %s\n With SI_ERROR: %d.\n", szFunc,
-                          strFilepath.Get(), nRc);
-            if ((-3) == nRc)
-                OTLog::Errno(szFunc);
-        }
-	}
-	
+	// (SENDING)
+	long lLatencyDelayAfter;
+	OTLog::CheckSetConfig("latency","send_delay_after",OTLog::GetLatencyDelayAfter(),lLatencyDelayAfter);
+	OTLog::SetLatencyDelayAfter((int)lLatencyDelayAfter);
+
+	long lLatencySendNoTries;
+	OTLog::CheckSetConfig("latency","send_fail_no_tries",OTLog::GetLatencySendNoTries(),lLatencySendNoTries);
+	OTLog::SetLatencySendNoTries((int)lLatencySendNoTries);
+
+	long lLatencySendMs;
+	OTLog::CheckSetConfig("latency","send_fail_max_ms",OTLog::GetLatencySendMs(),lLatencySendMs);
+	OTLog::SetLatencySendMs(lLatencySendMs);
+
+	// (RECEIVING)
+	long lLatencyReceiveNoTries;
+	OTLog::CheckSetConfig("latency","recv_fail_no_tries",OTLog::GetLatencyReceiveNoTries(),lLatencyReceiveNoTries);
+	OTLog::SetLatencyReceiveNoTries((int) lLatencyReceiveNoTries);
+
+	long lLatencyReceiveMs;
+	OTLog::CheckSetConfig("latency","recv_fail_max_ms",OTLog::GetLatencySendMs(),lLatencyReceiveMs);
+	OTLog::SetLatencyReceiveMs((int) lLatencyReceiveMs);
+
+
+	// ---------------------------------------------
+	// MARKETS
+	long lMinMarketScale;
+	OTLog::CheckSetConfig("markets","minimum_scale",OTLog::GetMinMarketScale(),lMinMarketScale);
+	OTLog::SetMinMarketScale(lMinMarketScale);
+
+
+	// ---------------------------------------------
+	// SECURITY (beginnings of..)
+	long lTimeoutSeconds;
+	OTLog::CheckSetConfig("security","master_key_timeout",CLIENT_MASTER_KEY_TIMEOUT_DEFAULT,lTimeoutSeconds);
+	OTMasterKey::It()->SetTimeoutSeconds((int)lTimeoutSeconds);
+
+
+	// Done Loading... Lets save any changes...
+	rc = OTLog::SaveConfiguration(strClientConfigFilePath);
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to Save Configuration");
+
+	// Finsihed Saving... now lets cleanup!
+	OTLog::ResetConfiguration();
+
 	return true;
 }
 
@@ -1018,6 +977,31 @@ bool OT_API::InitOTAPI()
 	WSADATA wsaData;
 	WORD wVersionRequested = MAKEWORD( 2, 2 );
 	int err = WSAStartup( wVersionRequested, &wsaData );
+
+	/* Tell the user that we could not find a usable		*/
+	/* Winsock DLL.											*/		
+
+	OT_ASSERT_MSG((err == 0), "WSAStartup failed!\n");
+
+
+	/*	Confirm that the WinSock DLL supports 2.2.			*/
+	/*	Note that if the DLL supports versions greater		*/
+	/*	than 2.2 in addition to 2.2, it will still return	*/
+	/*	2.2 in wVersion since that is the version we		*/
+	/*	requested.											*/
+
+	bool bWinsock = (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2);
+
+	/* Tell the user that we could not find a usable */
+	/* WinSock DLL.                                  */
+
+	if (!bWinsock) WSACleanup();  // do cleanup.
+	OT_ASSERT_MSG((!bWinsock), "Could not find a usable version of Winsock.dll\n");
+
+	/* The Winsock DLL is acceptable. Proceed to use it. */
+	/* Add network programming using Winsock here */
+	/* then call WSACleanup when done using the Winsock dll */
+	OTLog::vOutput(0,"The Winsock 2.2 dll was found okay\n");
 #endif
     // ------------------------------------
     // SIGNALS
@@ -1037,6 +1021,16 @@ bool OT_API::InitOTAPI()
 	// TODO in the case of Windows, figure err into this return val somehow.
     // (Or log it or something.)
     //
+
+	// Setup OTPath:
+
+	OTString strMainKeyDefault(MAIN_PATH_DEFAULT);
+	bool bFindOTPath = OTLog::FindOTPath(strMainKeyDefault);
+	OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
+
+	OTString strOTPath(OTLog::Path());
+
+
 	return true;
 }
 
@@ -1082,7 +1076,7 @@ bool OT_API::CleanupOTAPI()
 // So you use OT_API::InitOTAPI to initialize the entire application, and then you use
 // OT_API::Init() to initialize THIS "OT_CTX" (the OT_API object.)
 //
-bool OT_API::Init(OTString & strClientPath)
+bool OT_API::Init()
 {
 	// TODO: Main path needs to be stored in OT_API global, not OTLog static.
 	//		 This way, you can have multiple instances of OT_API,
@@ -1090,15 +1084,15 @@ bool OT_API::Init(OTString & strClientPath)
 	//		 Now that the OT_API class exists might be time to take
 	//       folders away from OTLog and move it all over. Ugh.
 	// OR!! Maybe just code a mechanism so OTLog tracks the instances of OT_API.
-	
-	OT_ASSERT_MSG(strClientPath.Exists(), "OT_API::Init: Empty path passed in.");
+
+	OT_ASSERT_MSG(OTLog::ConfirmExactPath(OTLog::Path()), "OT_API::Init: Empty path passed in.");
 	
     const char * szFunc = "OT_API::Init";
     
 	if (true == m_bInitialized)
 	{
 		OTLog::vError("%s: OTAPI was already initialized. (Skipping.) Ignoring path %s because already using path: %s\n", 
-					  szFunc, strClientPath.Get(), GetStoragePath());
+					  szFunc, OTLog::Path(), GetStoragePath());
 		return true;
 	}
 //	OT_ASSERT_MSG(false == m_bInitialized, "OTAPI was already initialized, please do not call it twice.");
@@ -1135,14 +1129,14 @@ bool OT_API::Init(OTString & strClientPath)
 		OT_ASSERT_MSG(NULL != m_pstrStoragePath, "Error allocating memory for m_pstrStoragePath in OT_API::Init");
 		OT_ASSERT_MSG(NULL != m_pstrWalletFilename, "Error allocating memory for m_pstrWalletFilename in OT_API::Init");
 		// ----------------------------		
-		LoadConfigFile(strClientPath);
+		LoadConfigFile();
 	}
 	
 	// Keep this though.
-	SetStoragePath(strClientPath); // sets m_pstrStoragePath
+	SetStoragePath(OTLog::OTPath()); // sets m_pstrStoragePath
 
 	// -------------------------------------
-	std::string strPath = strClientPath.Get();
+	std::string strPath = OTLog::Path();
 
 	// This way, everywhere else I can use the default storage context (for now) and it will work
 	// everywhere I put it. (Because it's now set up...)
@@ -1161,10 +1155,10 @@ bool OT_API::Init(OTString & strClientPath)
 			m_bInitialized = m_pClient->InitClient(*m_pWallet);
 			// -----------------------------
 			if (m_bInitialized)
-				OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc, strClientPath.Get());
+				OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc, OTLog::Path());
 			else
 				OTLog::vError("%s: Failed invoking m_pClient->InitClient() with path: %s \n", 
-							  szFunc, strClientPath.Get());
+							  szFunc, OTLog::Path());
 		}
 		return m_bInitialized;
 	}

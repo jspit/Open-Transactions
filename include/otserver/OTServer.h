@@ -142,8 +142,6 @@
 
 #include "OTCron.h"
 
-#include "simpleini/SimpleIni.h"
-
 class OTMessage;
 class OTClientConnection;
 //class OTAccount;
@@ -202,21 +200,6 @@ class OTServer
 	//
 
 	
-
-	static bool LogSettingChange(const char * szCategory,const char * szOption,const char * szValue);
-	static bool LogSettingChange(const char * szCategory,const char * szOption,long lValue);
-	static bool LogBoolSettingChange(const char * szCategory,const char * szOption,bool bValue);
-	
-	static OTString StringFill(const char * szString,int iLength,const char * szAppend);
-	static OTString StringFill(const char * szString,int iLength);
-
-	static bool CheckSetConfig(const char * szSection, const char * szKey, const char * szDefault,OTString & out_strResult);
-	static bool CheckSetConfig(const char * szSection, const char * szKey, long iDefault,long & out_lResult);
-	static bool CheckSetBoolConfig(const char * szSection, const char * szKey, bool bDefault,bool & out_bResult);
-
-	static bool SetConfigOptionBool(const char * szSection, const char * szKey, bool bVariableName);
-
-	static CSimpleIniA ini;
 
     static int			__heartbeat_no_requests;	// The number of client requests that will be processed per heartbeat.
     static int			__heartbeat_ms_between_beats; // number of ms between each heartbeat.

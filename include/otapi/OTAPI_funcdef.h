@@ -148,10 +148,10 @@
  
  Something like this:
  
- OT_BOOL bInit = OT_API_Init("/absolute-path-goes-here/.ot/client_data");
+ OT_BOOL bInit = OT_API_Init(); // we get it all automaticaly now :)
  
  */
-int OT_API_Init(const char * szClientPath); // actually returns BOOL
+int OT_API_Init(); // actually returns BOOL
 
 
 

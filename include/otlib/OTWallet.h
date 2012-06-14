@@ -182,9 +182,9 @@ EXPORT	OTWallet();
 	void Release_Wallet();
 	//------------------------------------------------------------	
     
-    bool IsNymOnMasterKey(const OTIdentifier & needle) const; // needle and haystack.
+EXPORT    bool IsNymOnMasterKey(const OTIdentifier & needle) const; // needle and haystack.
     
-    bool ConvertNymToMasterKey(OTPseudonym & theNym);
+EXPORT    bool ConvertNymToMasterKey(OTPseudonym & theNym);
 
 	//------------------------------------------------------------	
     

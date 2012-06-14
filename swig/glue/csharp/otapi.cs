@@ -17,8 +17,8 @@ public class otapi {
     return ret;
   }
 
-  public static int OT_API_Init(string szClientPath) {
-    int ret = otapiPINVOKE.OT_API_Init(szClientPath);
+  public static int OT_API_Init() {
+    int ret = otapiPINVOKE.OT_API_Init();
     return ret;
   }
 

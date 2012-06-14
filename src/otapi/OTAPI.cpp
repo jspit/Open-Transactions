@@ -229,9 +229,9 @@ void OT_API_Output(int nLogLevel, const char * szOutput)
 // To use this extern "C" API, you must call this function first.
 // (Therefore the same is true for all scripting languages that use this file...
 // Ruby, Python, Perl, PHP, etc.)
-OT_BOOL OT_API_Init(const char * szClientPath)
+OT_BOOL OT_API_Init()
 {
-	OT_ASSERT_MSG(NULL != szClientPath, "Null path passed to OT_API_Init");
+	//OT_ASSERT_MSG(NULL != szClientPath, "Null path passed to OT_API_Init");
 	
 	static bool bOT_ClassInit		= false;	// OT_API::InitOTAPI()
 	static bool bOT_InstanceInit	= false;	// OT_API::It().Init(strClientPath)
@@ -255,19 +255,19 @@ OT_BOOL OT_API_Init(const char * szClientPath)
 	//
 	if (!bOT_InstanceInit)	// But the instance init hasn't been invoked yet...
 	{
-		OTString strClientPath(szClientPath);
+		//OTString strClientPath(szClientPath);
 		
-		bOT_InstanceInit = OT_API::It().Init(strClientPath); // <====  SSL gets initialized in here, before any keys are loaded.	
+		bOT_InstanceInit = OT_API::It().Init(); // <====  SSL gets initialized in here, before any keys are loaded.	
 		
 		if (!bOT_InstanceInit)
 		{
 			OTLog::vError("OT_API_Init: Failure: OT_API::It().Init(strClientPath) returned false. Value of strClientPath: %s\n",
-						  strClientPath.Get());
+				OTLog::Path());
 			return OT_FALSE;
 		}
 		else
 			OTLog::vOutput(1, "OT_API_Init: Successfully invoked OT_API::It().Init(strClientPath) (instance initializer). Value of strClientPath: %s\n",
-						   strClientPath.Get());
+						   OTLog::Path());
 	}
 	// (else instance initializer was already invoked successfully.)
 	// -----------------------

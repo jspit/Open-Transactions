@@ -1360,7 +1360,7 @@ extern(C) uint function(void* jarg1) OTCaller_isCallbackSet;
 extern(C) void function(void* jarg1) OTCaller_callOne;
 extern(C) void function(void* jarg1) OTCaller_callTwo;
 extern(C) uint function(void* jarg1) OT_API_Set_PasswordCallback;
-extern(C) int function(char* jarg1) OT_API_Init;
+extern(C) int function() OT_API_Init;
 extern(C) int function(char* jarg1) OT_API_LoadWallet;
 extern(C) int function(char* jarg1, char* jarg2) OT_API_SwitchWallet;
 extern(C) void function(int jarg1, char* jarg2) OT_API_Output;

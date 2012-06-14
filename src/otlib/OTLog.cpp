@@ -155,13 +155,9 @@
 
 #ifdef _WIN32
 #include <WinsockWrapper.h>
-#endif
-
-#ifdef _WIN32
 #include <Shlobj.h>
 #endif
 
-#include "simpleini/SimpleIni.h"
 
 #define OT_CONFIG_FILENAME "ot_init.cfg"
 
@@ -1225,6 +1221,135 @@ void OTLog::SetupSignalHandler()
 #endif  // #if windows, #else (unix) #endif. (SIGNAL handling.)
 
 
+
+// *********************************************************************************
+//
+//
+//  Configuration Helpers
+//
+//
+
+CSimpleIniA OTLog::iniSimple;
+
+
+bool OTLog::SetConfigOptionBool(const char * szSection, const char * szKey, bool bVariableName){
+
+	OTLog::CheckSetBoolConfig(szSection,szKey,bVariableName,bVariableName);
+	return true;
+};
+
+bool OTLog::LogSettingChange(const char * szCategory,const char * szOption,const char * szValue){
+
+	OTLog::vOutput(0, "Setting %s %s %s \n",
+		(OTLog::StringFill(szCategory,12).Get()),
+		(OTLog::StringFill(szOption,30," to:").Get()),
+		szValue);
+
+	return true;
+};
+
+bool OTLog::LogSettingChange(const char * szCategory,const char * szOption,long lValue){
+
+	OTLog::vOutput(0, "Setting %s %s %d \n",
+		(OTLog::StringFill(szCategory,12).Get()),
+		(OTLog::StringFill(szOption,30," to:").Get()),
+		lValue);
+
+	return true;
+};
+
+bool OTLog::LogBoolSettingChange(const char * szCategory,const char * szOption,bool bValue){
+
+	OTLog::vOutput(0, "Setting %s %s %s \n",
+		(OTLog::StringFill(szCategory,12).Get()),
+		(OTLog::StringFill(szOption,30," to:").Get()),
+		bValue ? "true" : "false");
+
+	return true;
+};
+
+OTString OTLog::StringFill(const char * szString,int iLength,const char * szAppend){
+	std::string strString(szString);
+	if (NULL != szAppend) strString.append(szAppend);
+	for(;(strString.length() < iLength);strString.append(" "));
+	OTString strResult(strString);
+	return strResult;
+};
+
+OTString OTLog::StringFill(const char * szString,int iLength){
+	return OTLog::StringFill(szString,iLength,NULL);
+};
+
+// Returns False if default isn't set and no setting is found.
+bool OTLog::CheckSetConfig(const char * szSection, const char * szKey, const char * szDefault, OTString & out_strResult){
+	
+
+	const char * szVar = OTLog::iniSimple.GetValue(szSection, szKey,NULL);
+	if (NULL == szVar)
+		if (NULL == szDefault) return false; // no default value to set... just return false
+		else {
+			szVar = szDefault;
+			OTLog::iniSimple.SetValue(szSection, szKey,szVar,NULL,true);  // set default value
+	};
+
+	OTLog::LogSettingChange(szSection,szKey,szVar);
+	out_strResult.Set(szVar);
+
+	return true;
+};
+
+bool OTLog::CheckSetConfig(const char * szSection, const char * szKey, long lDefault,long & out_lResult){
+
+	const char * szVar = OTLog::iniSimple.GetValue(szSection, szKey,NULL); 
+	if (NULL == szVar){
+		OTLog::iniSimple.SetLongValue(szSection, szKey,lDefault,NULL,false,true);
+	}
+
+	long lVar = OTLog::iniSimple.GetLongValue(szSection, szKey,NULL);
+
+	OTLog::LogSettingChange(szSection,szKey,lVar);
+	out_lResult = lVar;
+
+	return true;
+};
+
+bool OTLog::CheckSetBoolConfig(const char * szSection, const char * szKey, bool bDefault,bool & out_bResult){
+	
+
+	const char * szVar = OTLog::iniSimple.GetValue(szSection, szKey,NULL); 
+	if (NULL == szVar){
+		szVar = bDefault ? "true" : "false";
+		OTLog::iniSimple.SetValue(szSection, szKey,szVar,NULL,true);
+	}
+
+	std::string strVar(szVar);
+	out_bResult = (0 == strVar.compare("true"));
+
+	OTLog::LogBoolSettingChange(szSection,szKey,out_bResult);
+
+	return true;
+};
+
+
+SI_Error OTLog::LoadConfiguration(OTString & strConfigurationFileExactPath){
+	return OTLog::iniSimple.LoadFile(strConfigurationFileExactPath.Get());
+};
+
+SI_Error OTLog::SaveConfiguration(OTString & strConfigurationFileExactPath){
+	return OTLog::iniSimple.SaveFile(strConfigurationFileExactPath.Get());
+};
+
+bool OTLog::ResetConfiguration(){
+	OTLog::iniSimple.Reset();
+	return true;
+};
+
+bool OTLog::IsConfigurationEmpty(){
+	return OTLog::iniSimple.IsEmpty();
+};
+
+
+
 // *********************************************************************************
 
 OTString OTLog::GetCurrentWorkingPath(){
@@ -1261,7 +1386,7 @@ bool OTLog::FindUserDataLocation(){
 		CSIDL_APPDATA|CSIDL_FLAG_CREATE, 
 		NULL, 
 		0, 
-		szPath))) ;
+		szPath))) {
 
 #ifdef UNICODE
 	__UserData.Set(utf8util::UTF8FromUTF16(szPath));
@@ -1270,6 +1395,8 @@ bool OTLog::FindUserDataLocation(){
 	__UserData.Set(szPath);
 	return true;
 #endif
+	}
+	else return false;
 
 #else
 	__UserData.Set(getenv("HOME"));
@@ -1286,41 +1413,47 @@ bool OTLog::FindOTDataLocation(OTString & strKeyName){
 
 
 bool OTLog::FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFileExact){
-	CSimpleIniA ini;
+	
+	// Before Starting... Reset Configuration.
+	OTLog::ResetConfiguration();
+
+	// Enum For errors.   Set to fail at start.
 	SI_Error rc = SI_FAIL;
-	const char * pOTPathDir;
+
+	//  path Directory, relitive unless _is_relative_to_ot_dir isn't set
+	OTString strOTPathDir;  
+
+	// Set keyname for key of wether the path it relative or not.
+	OTString strKeyRel;  strKeyRel.Format("%s_is_relative_to_ot_dir",strKeyName.Get());
+	
+	// Bool that will be true if realitive name.
+	bool bOTPathDirRel;
+
 
 	// Lets load the supplied configuration file, it is ezists.
-	if (strPathConfigFileExact.Exists())
-		if (OTLog::ConfirmExactPath(strPathConfigFileExact.Get())){
-			rc = ini.LoadFile(strPathConfigFileExact.Get());  // load supplied configuration file
+	if (strPathConfigFileExact.Exists() && (!strPathConfigFileExact.Compare("NULL")))
+		if (OTLog::ConfirmExactFile(strPathConfigFileExact.Get())){
+			rc = OTLog::LoadConfiguration(strPathConfigFileExact);  // load supplied configuration file
 		}
 		else
 			OTLog::vOutput(0, "OTLog::FindOTDataLocation: File: %s  Dosn't Exist\n", strPathConfigFileExact.Get());
 	else
 		OTLog::vOutput(0, "OTLog::FindOTDataLocation: No explicit Configuration File Set... Using Default\n");
 
-	// RC is in a good state... lets use this one.
+	// if RC is in a good state... we must have a configuration file.
 	if (rc >= 0){
-		const char * pOTDataPathDir;
+		OTString strOTDataPathDir;
 		bool bOTDataPathDirExact;
 
-		pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
-		bOTDataPathDirExact = ini.GetBoolValue("paths", "ot_data_is_path_exact", false);  // exact path to the OT Data Dir
-		pOTDataPathDir = ini.GetValue("paths", "ot_data_path", NULL);  // exact path to the OT Data Dir
-
-		if (NULL != pOTDataPathDir){
-			// Set OTDataPath to exact loctaion speicifed in the configuration.
-			OTString strOTDataPathDir = OTString(pOTDataPathDir);
-			if (!bOTDataPathDirExact)
-				__OTData = OTLog::RelativeWorkingPathToExact(strOTDataPathDir);
-			else
+		if (OTLog::CheckSetConfig("paths","ot_data_path",NULL,strOTDataPathDir)){  // ok lets set OT Data Path
+			OTLog::CheckSetBoolConfig("paths","ot_data_is_path_exact",false,bOTDataPathDirExact);
+			if (bOTDataPathDirExact) __OTData = OTLog::RelativeWorkingPathToExact(strOTDataPathDir);
+			else {
 				__OTData = strOTDataPathDir;
-
-			OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath()); //  Lets make the folder if it dosn't exist already.
+				OTLog::ConfirmOrCreateExactFolder(OTLog::DataPath()); //  Lets make the folder if it dosn't exist already.
+			};
 		}
-		else
-			OTLog::vOutput(0, "OTLog::FindOTDataLocation: OT Data Path Not Set... Using Default\n");
+		else OTLog::vOutput(0, "OTLog::FindOTDataLocation: OT Data Path Not Set... Using Default\n");
 	}
 
 	// RC is in a error state... lets load config from the default location
@@ -1333,46 +1466,26 @@ bool OTLog::FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFi
 
 		// If the config file exists... lets try opening it...
 		if (OTLog::ConfirmExactPath(strPathConfigFileExact.Get())){
-			rc = ini.LoadFile(strPathConfigFileExact.Get());
-			pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
+			rc = OTLog::LoadConfiguration(strPathConfigFileExact);
 		};
 	};
 
-	// Set keyname for key of wether the path it relative or not.
-	OTString strKeyRel;
-	strKeyRel.Format("%s_is_relative_to_ot_dir",strKeyName.Get());
+	// Check and Set Configuration.
+	OTLog::CheckSetConfig("paths",strKeyName.Get(),strKeyName.Get(),strOTPathDir);  // Foldername / Folder Path
+	OTLog::CheckSetBoolConfig("paths",strKeyRel.Get(),true,bOTPathDirRel);          // Is Foldername Relitive or full Path
 
-	// Lets make the configuration file since if it didn't load or don't have the path...
-	if ((rc < 0) || ini.IsEmpty() || (NULL == pOTPathDir)){
-		ini.SetBoolValue("paths",strKeyRel.Get(),true,NULL,true);
-		ini.SetValue("paths",strKeyName.Get(),strKeyName.Get(),NULL,true);
-		ini.SaveFile(strPathConfigFileExact.Get(),false);
-	};
+	// Done Updating settings... now will Save them:
+	OTLog::SaveConfiguration(strPathConfigFileExact);
 
-	// Reset ini... as we are going to re-load it.
-	ini.Reset();
+	// Set __OTPath
+	if (bOTPathDirRel) __OTPath = OTLog::RelativeDataPathToExact(strOTPathDir);
+	else __OTPath = strOTPathDir;
 
-	// Lets Load the configuration file... if it dosn't load now, throw an error.
-	OTLog::vOutput(0, "OTLog::FindOTDataLocation: Loading File: %s  \n", strPathConfigFileExact.Get());
-	bool bload = OTLog::ConfirmExactPath(strPathConfigFileExact.Get());
-	if (bload) rc = ini.LoadFile(strPathConfigFileExact.Get());
-	else
-		OT_ASSERT_MSG(bload, "OTLog::FindOTDataLocation: Assert failed: Load of Config Failed, cannot find file");
+	//  Lets make the path folder if it dosn't exist already.
+	OTLog::ConfirmOrCreateExactFolder(OTLog::Path()); 
 
-	// Lets Load the values fromt he configuration file.
-	OT_ASSERT_MSG(rc >=0, "OTLog::FindOTDataLocation: Assert failed: Unable to load config file, file unloadable");
-	bool bOTPathDirRel = ini.GetBoolValue("paths",strKeyRel.Get(),true,false);
-	pOTPathDir = ini.GetValue("paths", strKeyName.Get(), strKeyName.Get());
-
-	// Lets set the OT Path.
-	OT_ASSERT_MSG(NULL != pOTPathDir, "OTLog::FindOTDataLocation: Assert failed: Path Not in Configuration!");
-	OTString strOTPathDir(pOTPathDir);
-	if (bOTPathDirRel)
-		__OTPath = OTLog::RelativeDataPathToExact(strOTPathDir);
-	else
-		__OTPath = strOTPathDir;
-
-	OTLog::ConfirmOrCreateExactFolder(OTLog::Path()); //  Lets make the path folder if it dosn't exist already.
+	// Finished... Lets Reset the Configuation.
+	OTLog::ResetConfiguration();
 
 	return true;
 };

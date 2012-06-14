@@ -245,9 +245,9 @@ public:
 	OT_API();
 	~OT_API();
     // --------------------------------------------------	
-	bool LoadConfigFile(const OTString & strMainPath);
+	bool LoadConfigFile();
     // --------------------------------------------------
-			bool Init(OTString & strClientPath);	// Per instance.
+			bool Init();	// Per instance.
     // --------------------------------------------------
     // calls OTLog::OT_Init();
     static	bool InitOTAPI();						// Once per run.
