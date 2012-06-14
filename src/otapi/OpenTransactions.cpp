@@ -1213,7 +1213,7 @@ bool OT_API::LoadWallet(const OTString & strFilename)
 		
 		// This way, everywhere else I can use the default storage context (for now) and it will work
 		// everywhere I put it. (Because it's now set up...)
-        
+
 		bool bSuccessInitDefault = OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, OTDB_DEFAULT_PACKER, strDataFolderPath, strWalletFilename);
 
 		if (!bSuccessInitDefault)
@@ -1222,6 +1222,7 @@ bool OT_API::LoadWallet(const OTString & strFilename)
 		// ------------------------------------------
 		else // Success initializing default storage.
 		{
+			OTLog::vOutput(0,"m_pWallet->LoadWallet() with: %s\n",GetWalletFilename());
 			bSuccess = m_pWallet->LoadWallet(GetWalletFilename());
 			
 			if (false == bSuccess)

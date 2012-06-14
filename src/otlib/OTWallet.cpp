@@ -1371,7 +1371,7 @@ bool OTWallet::LoadWallet(const char * szFilename)
 	
 	// --------------------------------------------------------------------
 	
-	if (false == OTDB::Exists(szFilename))
+	if (false == OTDB::Exists(".",szFilename))
 	{
 		OTLog::vError("OTWallet::LoadWallet: Wallet file does not exist: %s\n", szFilename);
 		return false;
@@ -1379,7 +1379,7 @@ bool OTWallet::LoadWallet(const char * szFilename)
 	
 	// --------------------------------------------------------------------
 
-	OTString strFileContents(OTDB::QueryPlainString(szFilename)); // <=== LOADING FROM DATA STORE.
+	OTString strFileContents(OTDB::QueryPlainString(".",szFilename)); // <=== LOADING FROM DATA STORE.
 	
 	if (strFileContents.GetLength() < 2)
 	{
