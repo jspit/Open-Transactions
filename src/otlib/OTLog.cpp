@@ -263,7 +263,7 @@ using namespace tthread;
 
 // ---------------------------------------------------------------------------
 
-#include "ot_default_paths.h"
+//#include "ot_default_paths.h"
 
 // ---------------------------------------------------------------------------
 
@@ -2127,10 +2127,23 @@ bool OTLog::ConfirmFile(const char * szFileName)
 // Adds the main path prior to checking.
 bool OTLog::ConfirmExactFile(const char * szFileName)
 {
+	long lFileLength = 0;
+	return OTLog::ConfirmExactFile(szFileName,lFileLength);
+};
+
+bool OTLog::ConfirmExactFile(const char * szFileName, long & lFileLength)
+{
+	OTLog::vOutput(1,"OTLog::ConfirmExactFile: Looking at: %s...   ",szFileName);
+
 	OT_ASSERT(NULL != szFileName);
 	OTString t(szFileName);
 
-	if (!OTLog::ConfirmExactPath(szFileName)) return false;
+	if (!OTLog::ConfirmExactPath(szFileName)){
+		OTLog::vOutput(1,"UNABLE TO FIND PATH\n");
+		return false;
+	} else {
+		OTLog::vOutput(1,"Path Found... Now Checking if File... ");
+	};
 
 	int status;
 #ifdef _WIN32
@@ -2142,10 +2155,16 @@ bool OTLog::ConfirmExactFile(const char * szFileName)
 	struct stat st_buf;
 	status = stat (szFileName, &st_buf);
 #endif
-
-	if( status != 0 ) return false;
-	else if (S_ISREG(st_buf.st_mode)) return true;
-	else return false;
+	if( status != 0 ){
+		OTLog::vOutput(1,"COULD NOT GET STAT\n");
+		return false;
+	}
+	else if (!S_ISREG(st_buf.st_mode)){	OTLog::vOutput(1,"Is not a File, Bad!\n"); return false; }
+	else {
+		lFileLength = static_cast<long>(st_buf.st_size);
+		OTLog::vOutput(1,"Is a File, Good! With a length of: %d\n",lFileLength);
+		return true;
+	};
 };
 
 

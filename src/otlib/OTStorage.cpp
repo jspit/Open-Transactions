@@ -2739,71 +2739,76 @@ namespace OTDB
 	 
 	 New return values:
 	 
-	 -1 -- Error
-	 0 -- File not found
-	 1 -- File found.
+	 -1		-- Error
+	  0		-- File not found
+	  1+	-- File found and it's length.
 	 
 	 */
 	long StorageFS::ConstructAndConfirmPath(      std::string & strOutput, 
 		const std::string & strFolder,      const std::string & oneStr/*=""*/,  
 		const std::string & twoStr/*=""*/,  const std::string & threeStr/*=""*/)
 	{
-		OTString zero, one, two, three;
+		OTString zero, one, two, three, path, temp;
+		long lFileLength;
 
-		if (!strFolder.empty()){   // Do we have anytihng at all?
-			if (3 < strFolder.length()){ zero = OTString(strFolder); }  // Two or more characher, that's a name!
+		// Do we have anytihng at all?  Now check ing strFolder
+		if (strFolder.empty())
+			return -1;  // error no folder string.
+		else{   
+			if (3 < strFolder.length())
+				zero = OTString(strFolder); // Two or more characher, that's a name!
 			else{
 				OTString strZeroTemp = strFolder.c_str();
-				if (strZeroTemp.Compare(".")) zero = strZeroTemp;   // Single Dot, lets catch that and pass it throogh.
+				if (strZeroTemp.Compare("."))
+					zero = strZeroTemp;   // Single Dot, lets catch that and pass it throogh.
+				else return -1;  //we have nothing of use.
 			};
 		};
 
-		if (3 < oneStr.length())		one = oneStr.c_str();
+		if (3 < oneStr.length())		 one = oneStr.c_str(); 
 		if (3 < twoStr.length())		two = twoStr.c_str();
 		if (3 < threeStr.length())		three = threeStr.c_str();
 
-		OTString path, temp;
-
-		path.Set(OTLog::Path());
-
-		// We have nothing... So just return error!
-		if ((!zero.Exists()) && (!one.Exists()) && (!two.Exists()) && (!three.Exists())) return -1;
-
-		// Something exists... lets try them in order...
-		
-		if (zero.Exists()){  
-			if (zero.Compare(".")) path = OTLog::OTPath();  // if "." use path...
-			else path = OTLog::RelativePathToExact(zero);   // otherwise add dir to path.
-			strOutput = path.Get();  // set output path.
-
-			OTLog::ConfirmOrCreateExactFolder(path.Get());
-			if (!one.Exists()) return 0;  // nothing more to do.
-		}
-		else return -1;  // no root path... that is an error.
+		// Must have consetive paths
+		if ((!one.Exists()) && (two.Exists() || three.Exists())) return -1;  
+		if ((!two.Exists()) && (three.Exists())) return -1; // must have consetive paths
 
 
-		// One Exists... adding it to the path.
-		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),one.Get());
+		// Log...
+		OTLog::vOutput(1,"StorageFS::ConstructAndConfirmPath: zero: %s",zero.Get());
+		if (one.Exists()) { OTLog::vOutput(1," one: %s",one.Get());		
+			if (two.Exists()) { OTLog::vOutput(1," two: %s",two.Get());		
+				if (three.Exists()) OTLog::vOutput(1," three: %s",three.Get());
+			};
+		}; OTLog::vOutput(1,"\n");
+
+
+		// Zero...
+		if (zero.Compare(".")) path = OTLog::OTPath();  // if "." use path...
+		else path = OTLog::RelativePathToExact(zero);   // otherwise add dir to path.
+
 		strOutput = path.Get();  // set output path.
-		if (!two.Exists()){
-			if (OTLog::ConfirmExactFile(path.Get())) return 1; else return 0; }
+
+		OTLog::ConfirmOrCreateExactFolder(path.Get());
+		if (!one.Exists()) return 0;  // nothing more to do.
+
+		// One...
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),one.Get()); strOutput = path.Get();  // set output path.
+		if (!two.Exists()){	if (OTLog::ConfirmExactFile(path.Get(),lFileLength))
+			return lFileLength; else return 0; }
 		else	OTLog::ConfirmOrCreateExactFolder(path.Get());  // make a folder for the next level...
 
-
-		// Two Exists... adding it to the path.
-		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),two.Get());
-		strOutput = path.Get();  // set output path.
-		if (!three.Exists()){ if (OTLog::ConfirmExactFile(path.Get())) return 1; else return 0;	}
+		// Two...
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),two.Get()); strOutput = path.Get();  // set output path.
+		if (!three.Exists()){ if (OTLog::ConfirmExactFile(path.Get(),lFileLength))
+			return lFileLength; else return 0;	}
 		else OTLog::ConfirmOrCreateExactFolder(path.Get());  // make a folder for the next level...
 
-
-		// Three Exists... adding it to the path.
-		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),three.Get());
-		strOutput = path.Get();  // set output path.
-		if (OTLog::ConfirmExactFile(path.Get())) return 1;
+		// Three...
+		temp = path;  path.Format("%s%s%s",temp.Get(),OTLog::PathSeparator(),three.Get()); strOutput = path.Get();  // set output path.
+		if (OTLog::ConfirmExactFile(path.Get(),lFileLength))
+			return lFileLength;
 		else return 0; // We don't want to create a directory for a file.
-		// if we get here... we have an error.
-		return -1;
 	};
 
 	
@@ -2864,7 +2869,7 @@ namespace OTDB
 		{
 			OTLog::vError("StorageFS::onQueryPackedBuffer: Failure reading from %s: file does not exist.\n", strOutput.c_str());
 			return false;
-		}
+		};
 		
 		// -------------------------------
 		
@@ -3083,6 +3088,7 @@ namespace OTDB
 	bool StorageFS::Init(std::string oneStr/*=""*/,  std::string twoStr/*=""*/,  std::string threeStr/*=""*/, 
 						 std::string fourStr/*=""*/, std::string fiveStr/*=""*/, std::string sixStr/*=""*/)
 	{
+		OTLog::vOutput(0,"StorageFS::Init: one: %s two: %s\n",oneStr.c_str(),twoStr.c_str());
 
 		OT_ASSERT_MSG((oneStr.length() > 3), "StorageFS::Init: Path Too Short!  Error!!");
 //		OT_ASSERT_MSG((twoStr.length() > 3), "StorageFS::Init: Wallet Filename too Short! Error!!");

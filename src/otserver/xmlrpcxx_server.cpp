@@ -179,7 +179,7 @@ extern "C"
 
 // ---------------------------------------------------------------------------
 
-#include "ot_default_paths.h"
+//#include "ot_default_paths.h"
 
 // ---------------------------------------------------------------------------
 
@@ -850,7 +850,7 @@ int main(int argc, char* argv[])
 	//
 	OTLog::vOutput(0, 
 				   "\nNow loading the server nym, which will also ask you for a password, to unlock\n"
-				   "its private key. (Default password is \"%s\".)\n", KEY_PASSWORD);
+				   "its private key.");
 	
 	pServer->Init(); // Keys, etc are loaded here. ===> Assumes main path is set! <===
 	
