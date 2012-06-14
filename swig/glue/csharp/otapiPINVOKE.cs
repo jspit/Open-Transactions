@@ -426,7 +426,7 @@ class otapiPINVOKE {
   public static extern bool OT_API_Set_PasswordCallback(HandleRef jarg1);
 
   [DllImport("otapi", EntryPoint="CSharp_OT_API_Init")]
-  public static extern int OT_API_Init(string jarg1);
+  public static extern int OT_API_Init();
 
   [DllImport("otapi", EntryPoint="CSharp_OT_API_LoadWallet")]
   public static extern int OT_API_LoadWallet(string jarg1);

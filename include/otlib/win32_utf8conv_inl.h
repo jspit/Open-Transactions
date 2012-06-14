@@ -16,8 +16,13 @@
 #include <string.h>     // strlen()
 
 #ifdef _WIN32
-#include <WinsockWrapper.h>
-#endif	
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#endif
+
+
 
 
 namespace utf8util {

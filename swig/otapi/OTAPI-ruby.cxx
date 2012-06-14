@@ -5332,27 +5332,16 @@ fail:
 
 SWIGINTERN VALUE
 _wrap_OT_API_Init(int argc, VALUE *argv, VALUE self) {
-  char *arg1 = (char *) 0 ;
-  int res1 ;
-  char *buf1 = 0 ;
-  int alloc1 = 0 ;
   int result;
   VALUE vresult = Qnil;
   
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
+  if ((argc < 0) || (argc > 0)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
   }
-  res1 = SWIG_AsCharPtrAndSize(argv[0], &buf1, NULL, &alloc1);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "char const *","OT_API_Init", 1, argv[0] ));
-  }
-  arg1 = reinterpret_cast< char * >(buf1);
-  result = (int)OT_API_Init((char const *)arg1);
+  result = (int)OT_API_Init();
   vresult = SWIG_From_int(static_cast< int >(result));
-  if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
   return vresult;
 fail:
-  if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
   return Qnil;
 }
 

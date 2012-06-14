@@ -132,8 +132,6 @@
 
 
 
-#define MAIN_PATH_DEFAULT	"client_data"
-
 #define CA_FILE             "certs/special/ca.crt"
 #define KEY_FILE            "certs/special/client.pem"
 
@@ -1514,13 +1512,8 @@ int main(int argc, char* argv[])
 
 	// -------------------------------------------------------------------
 
-	OTString strMainKeyDefault(MAIN_PATH_DEFAULT);
-	bool bFindOTPath = OTLog::FindOTPath(strMainKeyDefault);
-	OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
 
-	OTString strOTPath(OTLog::Path());
-
-	OT_API::It().Init(strOTPath);   
+	OT_API::It().Init();   
     
 	OTLog::vOutput(1, "Using client_data path:  %s\n", OTLog::Path());
     // -------------------------------------------------------------------

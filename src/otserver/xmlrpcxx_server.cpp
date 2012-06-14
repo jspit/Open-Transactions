@@ -707,20 +707,15 @@ int main(int argc, char* argv[])
 	// -----------------------------------------------------------------------
 #ifdef _WIN32
 
-	WORD wVersionRequested;
 	WSADATA wsaData;
-	int err;
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	int err = WSAStartup( wVersionRequested, &wsaData );
 
-	/* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
-	wVersionRequested = MAKEWORD(2, 2);
-
-	err = WSAStartup(wVersionRequested, &wsaData);
-	if (err != 0) {
 	/* Tell the user that we could not find a usable		*/
-	/* Winsock DLL.											*/
-		printf("WSAStartup failed with error: %d\n", err);
-		return 1;
-	}
+	/* Winsock DLL.											*/		
+
+	OT_ASSERT_MSG((err == 0), "WSAStartup failed!\n");
+
 
 	/*	Confirm that the WinSock DLL supports 2.2.			*/
 	/*	Note that if the DLL supports versions greater		*/
@@ -728,19 +723,21 @@ int main(int argc, char* argv[])
 	/*	2.2 in wVersion since that is the version we		*/
 	/*	requested.											*/
 
-	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-		/* Tell the user that we could not find a usable */
-		/* WinSock DLL.                                  */
-		printf("Could not find a usable version of Winsock.dll\n");
-		WSACleanup();
-		return 1;
-	}
-	else
-		printf("The Winsock 2.2 dll was found okay\n");
+	bool bWinsock = (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2);
+
+	/* Tell the user that we could not find a usable */
+	/* WinSock DLL.                                  */
+
+	if (!bWinsock) WSACleanup();  // do cleanup.
+	OT_ASSERT_MSG((!bWinsock), "Could not find a usable version of Winsock.dll\n");
 
 	/* The Winsock DLL is acceptable. Proceed to use it. */
 	/* Add network programming using Winsock here */
 	/* then call WSACleanup when done using the Winsock dll */
+<<<<<<< HEAD
+=======
+	OTLog::vOutput(0,"The Winsock 2.2 dll was found okay\n");
+>>>>>>> now ot prompt and anything that uses otapi will automaticaly make their configuration :)
 #endif
 
 

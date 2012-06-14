@@ -228,8 +228,8 @@ def OT_API_Set_PasswordCallback(*args):
   return _otapi.OT_API_Set_PasswordCallback(*args)
 OT_API_Set_PasswordCallback = _otapi.OT_API_Set_PasswordCallback
 
-def OT_API_Init(*args):
-  return _otapi.OT_API_Init(*args)
+def OT_API_Init():
+  return _otapi.OT_API_Init()
 OT_API_Init = _otapi.OT_API_Init
 
 def OT_API_LoadWallet(*args):

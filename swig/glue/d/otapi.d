@@ -545,8 +545,8 @@ bool OT_API_Set_PasswordCallback(OTCaller theCaller) {
   return ret;
 }
 
-int OT_API_Init(char[] szClientPath) {
-  auto ret = otapi_im.OT_API_Init((szClientPath ? tango.stdc.stringz.toStringz(szClientPath) : null));
+int OT_API_Init() {
+  auto ret = otapi_im.OT_API_Init();
   return ret;
 }
 

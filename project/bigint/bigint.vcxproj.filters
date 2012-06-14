@@ -53,11 +53,5 @@
     <ClCompile Include="..\..\src\bigint\BigUnsignedInABase.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\bigint\sample.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bigint\testsuite.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

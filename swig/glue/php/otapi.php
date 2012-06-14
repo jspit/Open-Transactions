@@ -43,8 +43,8 @@ abstract class otapi {
 		return OT_API_Set_PasswordCallback($theCaller);
 	}
 
-	static function OT_API_Init($szClientPath) {
-		return OT_API_Init($szClientPath);
+	static function OT_API_Init() {
+		return OT_API_Init();
 	}
 
 	static function OT_API_LoadWallet($szWalletFilename) {

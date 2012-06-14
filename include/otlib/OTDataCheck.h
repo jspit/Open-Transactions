@@ -132,6 +132,10 @@
 
 // DLL Export for Win32
 
+#ifdef _WIN32
+#include <WinsockWrapper.h>
+#endif
+
 #undef EXPORT
 #ifdef _WINDLL
   #define EXPORT __declspec(dllexport)

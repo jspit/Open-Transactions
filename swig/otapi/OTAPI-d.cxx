@@ -1463,13 +1463,11 @@ SWIGEXPORT unsigned int D_OT_API_Set_PasswordCallback(void * jarg1) {
 }
 
 
-SWIGEXPORT int D_OT_API_Init(char * jarg1) {
+SWIGEXPORT int D_OT_API_Init() {
   int jresult ;
-  char *arg1 = (char *) 0 ;
   int result;
   
-  arg1 = (char *)jarg1; 
-  result = (int)OT_API_Init((char const *)arg1);
+  result = (int)OT_API_Init();
   jresult = result;
   return jresult;
 }

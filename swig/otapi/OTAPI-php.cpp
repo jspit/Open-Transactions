@@ -4468,26 +4468,14 @@ fail:
 
 
 ZEND_NAMED_FUNCTION(_wrap_OT_API_Init) {
-  char *arg1 = (char *) 0 ;
-  zval **args[1];
   int result;
   
   SWIG_ResetError();
-  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
+  if(ZEND_NUM_ARGS() != 0) {
     WRONG_PARAM_COUNT;
   }
   
-  
-  /*@SWIG:/usr/local/Cellar/swig/2.0.6/share/swig/2.0.6/php/utils.i,62,CONVERT_STRING_IN@*/
-  if ((*args[0])->type==IS_NULL) {
-    arg1 = (char *) 0;
-  } else {
-    convert_to_string_ex(args[0]);
-    arg1 = (char *) Z_STRVAL_PP(args[0]);
-  }
-  /*@SWIG@*/;
-  
-  result = (int)OT_API_Init((char const *)arg1);
+  result = (int)OT_API_Init();
   {
     ZVAL_LONG(return_value,result);
   }

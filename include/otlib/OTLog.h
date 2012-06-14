@@ -150,6 +150,8 @@
 
 #include <deque>
 
+#include "simpleini/SimpleIni.h"
+
 
 /*
 #if __APPLE__
@@ -191,6 +193,8 @@ class OTLog
 private:
 	OTLog();
 
+	static CSimpleIniA iniSimple; // we don't want this to be used by anyone else.
+
 public:	
     
 EXPORT	static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it in xmlrpcxx_client.cpp just above OT_Init.
@@ -201,6 +205,29 @@ EXPORT	static void SetupSignalHandler();  // OPTIONAL. Therefore I will call it 
     // Changes ~/blah to /Users/au/blah
     //
 //EXPORT	static void TransformFilePath(const char * szInput, OTString & strOutput);
+
+	// --------------------------------------------------
+	// Configuration Helpers  (all inline)
+	//
+
+EXPORT	static bool LogSettingChange(const char * szCategory,const char * szOption,const char * szValue);
+EXPORT	static bool LogSettingChange(const char * szCategory,const char * szOption,long lValue);
+EXPORT	static bool LogBoolSettingChange(const char * szCategory,const char * szOption,bool bValue);
+	
+EXPORT	static OTString StringFill(const char * szString,int iLength,const char * szAppend);
+EXPORT	static OTString StringFill(const char * szString,int iLength);
+
+EXPORT	static bool CheckSetConfig(const char * szSection, const char * szKey, const char * szDefault,OTString & out_strResult);
+EXPORT	static bool CheckSetConfig(const char * szSection, const char * szKey, long iDefault,long & out_lResult);
+EXPORT	static bool CheckSetBoolConfig(const char * szSection, const char * szKey, bool bDefault,bool & out_bResult);
+
+EXPORT	static bool SetConfigOptionBool(const char * szSection, const char * szKey, bool bVariableName);
+
+EXPORT	static SI_Error LoadConfiguration(OTString & strConfigurationFileExactPath);
+EXPORT	static SI_Error SaveConfiguration(OTString & strConfigurationFileExactPath);
+
+EXPORT	static bool ResetConfiguration();
+EXPORT	static bool IsConfigurationEmpty();
 
 	 // -------------------------------------------------
 
@@ -341,8 +368,7 @@ EXPORT	static void SetLogfile(const char * szPath);
 	
 	// ------------------------------------------------------------
 	
-EXPORT	static 
-	const char *	Version();
+EXPORT	static const char *	Version();
 	
 EXPORT	static int		GetLogLevel();
 EXPORT	static void		SetLogLevel(int nLevel);
