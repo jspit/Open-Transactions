@@ -34,8 +34,10 @@ class Coin;
 extern const char _NL[];
 void SetDumper(BIO *out);
 void SetDumper(FILE *f);
+void SetDumper(const char *filepathexact);
 void SetMonitor(BIO *out);
 void SetMonitor(FILE *f);
+void SetMonitor(const char *filepathexact);
 void DumpNumber(BIO *out,const char *szTitle,const BIGNUM *bn,
 		const char *szTrailer=_NL);
 void DumpNumber(const char *szTitle,const BIGNUM *bn,

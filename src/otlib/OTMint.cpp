@@ -596,7 +596,11 @@ bool OTMint::AddDenomination(OTPseudonym & theNotary, long lDenomination, int nP
 		return false;
 	}
 	
-    SetMonitor(stderr);
+#ifdef _WIN32
+	SetMonitor("openssl.dump");
+#else
+	SetMonitor(stderr);
+#endif
 	
     BIO *bio		=	BIO_new(BIO_s_mem());
     BIO *bioPublic	=	BIO_new(BIO_s_mem());
@@ -915,7 +919,13 @@ bool OTMint::SignToken(OTPseudonym & theNotary, OTToken & theToken, OTString & t
 	bool bReturnValue = false;
 	
 	//OTLog::Error("%s <bank file> <coin request> <coin signature> [<signature repeats>]\n",
+#ifdef _WIN32
+	OTString OpenSSLDumpFilename("openssl.dumpfile");
+	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	SetDumper(OpenSSLDumpFileExact.Get());
+#else
 	SetDumper(stderr);
+#endif
 	
 //	OTLog::vError("OTMint::SignToken!!\nnTokenIndex: %d\n Denomination: %ld\n", nTokenIndex, theToken.GetDenomination());
 	
@@ -1028,8 +1038,9 @@ bool OTMint::SignToken(OTPseudonym & theNotary, OTToken & theToken, OTString & t
 
 	BIO_free_all(bioBank);		
     BIO_free_all(bioRequest);	
-    BIO_free_all(bioSignature);	
-	
+    BIO_free_all(bioSignature);
+
+
 	return bReturnValue;
 }
 
@@ -1040,7 +1051,13 @@ bool OTMint::VerifyToken(OTPseudonym & theNotary, OTString & theCleartextToken, 
 {
 	bool bReturnValue = false;
 //	OTLog::Error("%s <bank info> <coin>\n", argv[0]);
-    SetDumper(stderr);
+#ifdef _WIN32
+	OTString OpenSSLDumpFilename("openssl.dumpfile");
+	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	SetDumper(OpenSSLDumpFileExact.Get());
+#else
+	SetDumper(stderr);
+#endif
 	
 	BIO *bioBank	= BIO_new(BIO_s_mem()); // input
 	BIO *bioCoin	= BIO_new(BIO_s_mem()); // input
@@ -1089,6 +1106,7 @@ bool OTMint::VerifyToken(OTPseudonym & theNotary, OTString & theCleartextToken, 
 	// Cleanup openssl resources.
 	BIO_free_all(bioBank);	
 	BIO_free_all(bioCoin);	
+
 	
 	return bReturnValue;
 }

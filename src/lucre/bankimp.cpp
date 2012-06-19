@@ -29,6 +29,15 @@ void SetDumper(FILE *f)
     SetDumper(out);
     }
 
+void SetDumper(const char *filepathexact)
+    {
+    BIO *out = new BIO;
+    out = BIO_new_file(filepathexact,"w");
+	assert(out);
+    SetDumper(out);
+    }
+
+
 void SetMonitor(BIO *out)
     { mout=out; }
 
@@ -38,6 +47,14 @@ void SetMonitor(FILE *f)
     assert(out);
     BIO_set_fp(out,f,BIO_NOCLOSE);
     SetMonitor(out);
+    }
+
+void SetMonitor(const char *filepathexact)
+    {
+    BIO *out = new BIO;
+    out = BIO_new_file(filepathexact,"r");
+	assert(out);
+    SetDumper(out);
     }
 
 BIGNUM *ReadNumber(BIO *in,const char *szTitle)

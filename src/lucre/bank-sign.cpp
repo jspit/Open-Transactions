@@ -15,7 +15,12 @@ int LucreBankSign(int argc,char **argv)
     if(argc >= 5)
 	nRepeats=atoi(argv[4]);
     else
+	
+#ifdef _WIN32
+	SetDumper("openssldump");
+#else
 	SetDumper(stderr);
+#endif
 
     BIO *bioBank=BIO_new_file(szBankFile,"r");
     BIO *bioRequest=BIO_new_file(szRequest,"r");

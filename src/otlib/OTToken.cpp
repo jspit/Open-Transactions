@@ -813,7 +813,13 @@ bool OTToken::GenerateTokenRequest(const OTPseudonym & theNym, OTMint & theMint,
 	// But we should still set them since server may choose to reject the request.
 	SetSeriesAndExpiration(theMint.GetSeries(), theMint.GetValidFrom(), theMint.GetValidTo());
 	
-    SetDumper(stderr);
+#ifdef _WIN32
+	OTString OpenSSLDumpFilename("openssl.dumpfile");
+	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	SetDumper(OpenSSLDumpFileExact.Get());
+#else
+	SetDumper(stderr);
+#endif
 	
     BIO *bioBank		=	BIO_new(BIO_s_mem()); // Input. We must supply the bank's public lucre info
     BIO *bioCoin		=	BIO_new(BIO_s_mem()); // These two are output. We must write these bios, after
@@ -908,6 +914,7 @@ bool OTToken::GenerateTokenRequest(const OTPseudonym & theNym, OTMint & theMint,
 	BIO_free_all(bioBank);	
     BIO_free_all(bioCoin);	
     BIO_free_all(bioPublicCoin);
+
 	
 	return true;
 }
@@ -983,7 +990,14 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 	}
 	
 	// Lucre
-    SetDumper(stderr);
+#ifdef _WIN32
+	OTString OpenSSLDumpFilename("openssl.dumpfile");
+	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	SetDumper(OpenSSLDumpFileExact.Get());
+#else
+	SetDumper(stderr);
+#endif
+
     BIO *bioBank			= BIO_new(BIO_s_mem()); // input
     BIO *bioSignature		= BIO_new(BIO_s_mem()); // input
     BIO *bioPrivateRequest	= BIO_new(BIO_s_mem()); // input
@@ -1079,6 +1093,7 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 	BIO_free_all(bioPrivateRequest);	
 	BIO_free_all(bioCoin);	
 
+
 	return bReturnValue;	
 }
 
@@ -1095,7 +1110,11 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 bool OTToken::VerifyToken(OTPseudonym & theNotary, OTMint & theMint)
 {
 	//OTLog::vError("%s <bank info> <coin>\n",argv[0]);
-    SetDumper(stderr);
+#ifdef _WIN32
+	SetDumper("openssl.dump");
+#else
+	SetDumper(stderr);
+#endif
 	
 	if (OTToken::spendableToken != m_State)
 	{
