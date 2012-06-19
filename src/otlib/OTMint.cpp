@@ -596,7 +596,11 @@ bool OTMint::AddDenomination(OTPseudonym & theNotary, long lDenomination, int nP
 		return false;
 	}
 	
-    SetMonitor(stderr);
+#ifdef _WIN32
+	SetMonitor("openssl.dump");
+#else
+	SetMonitor(stderr);
+#endif
 	
     BIO *bio		=	BIO_new(BIO_s_mem());
     BIO *bioPublic	=	BIO_new(BIO_s_mem());
@@ -1089,6 +1093,7 @@ bool OTMint::VerifyToken(OTPseudonym & theNotary, OTString & theCleartextToken, 
 	// Cleanup openssl resources.
 	BIO_free_all(bioBank);	
 	BIO_free_all(bioCoin);	
+
 	
 	return bReturnValue;
 }

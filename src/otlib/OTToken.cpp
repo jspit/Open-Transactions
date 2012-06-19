@@ -930,6 +930,7 @@ bool OTToken::GenerateTokenRequest(const OTPseudonym & theNym, OTMint & theMint,
 	BIO_free_all(bioBank);	
     BIO_free_all(bioCoin);	
     BIO_free_all(bioPublicCoin);
+
 	
 	return true;
 }
@@ -1101,7 +1102,7 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 	BIO_free_all(bioSignature);	
 	BIO_free_all(bioPrivateRequest);	
 	BIO_free_all(bioCoin);	
-    
+
 	return bReturnValue;	
 }
 
