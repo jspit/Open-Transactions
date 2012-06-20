@@ -1032,8 +1032,8 @@ bool OTMint::SignToken(OTPseudonym & theNotary, OTToken & theToken, OTString & t
 
 	BIO_free_all(bioBank);		
     BIO_free_all(bioRequest);	
-    BIO_free_all(bioSignature);	
-	    
+    BIO_free_all(bioSignature);
+
 	return bReturnValue;
 }
 
@@ -1093,6 +1093,8 @@ bool OTMint::VerifyToken(OTPseudonym & theNotary, OTString & theCleartextToken, 
 	// Cleanup openssl resources.
 	BIO_free_all(bioBank);	
 	BIO_free_all(bioCoin);	
+
+	CleanupDumpFile(OpenSSLDumpFileExact.Get());
 
 	
 	return bReturnValue;
