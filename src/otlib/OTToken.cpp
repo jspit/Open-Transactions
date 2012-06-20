@@ -915,6 +915,7 @@ bool OTToken::GenerateTokenRequest(const OTPseudonym & theNym, OTMint & theMint,
     BIO_free_all(bioCoin);	
     BIO_free_all(bioPublicCoin);
 
+	CleanupDumpFile(OpenSSLDumpFileExact.Get());
 	
 	return true;
 }
@@ -1092,6 +1093,8 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 	BIO_free_all(bioSignature);	
 	BIO_free_all(bioPrivateRequest);	
 	BIO_free_all(bioCoin);	
+
+	CleanupDumpFile(OpenSSLDumpFileExact.Get());
 
 
 	return bReturnValue;	

@@ -35,6 +35,7 @@ extern const char _NL[];
 void SetDumper(BIO *out);
 void SetDumper(FILE *f);
 void SetDumper(const char *filepathexact);
+void CleanupDumpFile(const char *filepathexact);
 void SetMonitor(BIO *out);
 void SetMonitor(FILE *f);
 void SetMonitor(const char *filepathexact);

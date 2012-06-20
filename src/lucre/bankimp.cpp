@@ -1,4 +1,5 @@
 #include "bank.h"
+#include <fstream>
 
 #ifdef _WIN32
 #include <cstring>
@@ -30,12 +31,24 @@ void SetDumper(FILE *f)
     }
 
 void SetDumper(const char *filepathexact)
-    {
-    BIO *out = new BIO;
-    out = BIO_new_file(filepathexact,"w");
+{
+	// lets clear the last time we used this file.
+	CleanupDumpFile(filepathexact);
+	BIO *out = new BIO;
+	out = BIO_new_file(filepathexact,"w");
 	assert(out);
-    SetDumper(out);
-    }
+	SetDumper(out);
+}
+
+void CleanupDumpFile(const char *filepathexact){
+	std::fstream f(filepathexact, std::ios::in);
+	if (f) {
+		f.close();
+		f.open(filepathexact, std::ios::out | std::ios::trunc );
+		f.close();
+		remove(filepathexact);
+	};
+};
 
 
 void SetMonitor(BIO *out)
