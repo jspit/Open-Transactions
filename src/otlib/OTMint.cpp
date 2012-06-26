@@ -921,7 +921,8 @@ bool OTMint::SignToken(OTPseudonym & theNotary, OTToken & theToken, OTString & t
 	//OTLog::Error("%s <bank file> <coin request> <coin signature> [<signature repeats>]\n",
 #ifdef _WIN32
 	OTString OpenSSLDumpFilename("openssl.dumpfile");
-	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	OTString OpenSSLDumpFileExact;
+	OTLog::RelativePathToDataPath(OpenSSLDumpFilename,OpenSSLDumpFileExact);
 	SetDumper(OpenSSLDumpFileExact.Get());
 #else
 	SetDumper(stderr);
@@ -1055,7 +1056,8 @@ bool OTMint::VerifyToken(OTPseudonym & theNotary, OTString & theCleartextToken, 
 //	OTLog::Error("%s <bank info> <coin>\n", argv[0]);
 #ifdef _WIN32
 	OTString OpenSSLDumpFilename("openssl.dumpfile");
-	OTString OpenSSLDumpFileExact = OTLog::RelativePathToExact(OpenSSLDumpFilename);
+	OTString OpenSSLDumpFileExact;
+	OTLog::RelativePathToDataPath(OpenSSLDumpFilename,OpenSSLDumpFileExact);
 	SetDumper(OpenSSLDumpFileExact.Get());
 #else
 	SetDumper(stderr);

@@ -750,9 +750,8 @@ int main(int argc, char* argv[])
 			//
 
 			OTString strServerKeyDefault(SERVER_PATH_DEFAULT);
-			bool bFindOTPath = OTLog::FindOTPath(strServerKeyDefault);
 
-			OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
+			OT_ASSERT_MSG(OTLog::SetupPaths(strServerKeyDefault), "main(): Assert failed: Failed to set OT Path");
 
             // -----------------------------------------------------------------------    
             

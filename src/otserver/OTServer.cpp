@@ -1020,8 +1020,10 @@ bool OTServer::LoadConfigFile()
 {	
 	SI_Error rc = SI_FAIL;
 
-	OTString strServerConfigFilename = OTString(SERVER_CONFIG_FILENAME);  // todo: stop hardcoding
-	OTString strServerConfigFilePath = OTLog::RelativePathToExact(strServerConfigFilename);
+	OTString strServerConfigFilename(SERVER_CONFIG_FILENAME);  // todo: stop hardcoding
+	OTString strServerConfigFilePath;
+	OTLog::RelativePathToDataPath(strServerConfigFilename,strServerConfigFilePath);
+	
 
 	// check if config file exists:
 	if (!OTLog::ConfirmExactFile(strServerConfigFilePath.Get())){
@@ -1043,8 +1045,7 @@ bool OTServer::LoadConfigFile()
 	OTString strLogFilename, strLogFile;
 
 	OTLog::CheckSetConfig("logging","log_filename",SERVER_LOGFILE_FILENAME,strLogFilename);
-
-	strLogFile = OTLog::RelativePathToExact(strLogFilename);
+	OTLog::RelativePathToDataPath(strLogFilename,strLogFile);
 	OTLog::SetLogfile(strLogFile.Get());
 
 
