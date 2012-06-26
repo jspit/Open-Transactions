@@ -174,7 +174,7 @@ EXPORT	OTData(const OTData &theSource);
 
     EXPORT	virtual void Release();
     void Release_Data();
-	virtual ~OTData();
+EXPORT	virtual ~OTData();
 
     
     

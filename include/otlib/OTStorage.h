@@ -1557,7 +1557,12 @@ namespace OTDB
 		bool ConfirmOrCreateFolder(const char * szFolderName, struct stat *pst=NULL); // local to data_folder
 		bool ConfirmFile(const char * szFileName, struct stat *pst=NULL); // local to data_folder
 		
-		const char * GetFullPath() { return OTLog::Path(); }  // path to data_folder
+		const char * GetFullPath() {
+			OTString strDataPath;
+			OTLog::GetDataPath(strDataPath);
+			return strDataPath.Get();
+		};  // path to data_folder
+			
 		const char * GetWalletFile() { return m_strWalletFile.c_str(); } // wallet filename
 		
 		const char * PathSeparator();

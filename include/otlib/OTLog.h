@@ -149,6 +149,7 @@
 
 
 #include <deque>
+#include <memory>
 
 #include "simpleini/SimpleIni.h"
 
@@ -217,32 +218,137 @@ EXPORT	static bool LogBoolSettingChange(const char * szCategory,const char * szO
 EXPORT	static OTString StringFill(const char * szString,int iLength,const char * szAppend);
 EXPORT	static OTString StringFill(const char * szString,int iLength);
 
+EXPORT	static bool CheckConfig(const char * szSection, const char * szKey, OTString & out_strResult);
+EXPORT	static bool SetConfig(const char * szSection, const char * szKey, const OTString & strResult);
+
 EXPORT	static bool CheckSetConfig(const char * szSection, const char * szKey, const char * szDefault,OTString & out_strResult);
 EXPORT	static bool CheckSetConfig(const char * szSection, const char * szKey, long iDefault,long & out_lResult);
 EXPORT	static bool CheckSetBoolConfig(const char * szSection, const char * szKey, bool bDefault,bool & out_bResult);
 
 EXPORT	static bool SetConfigOptionBool(const char * szSection, const char * szKey, bool bVariableName);
 
-EXPORT	static SI_Error LoadConfiguration(OTString & strConfigurationFileExactPath);
-EXPORT	static SI_Error SaveConfiguration(OTString & strConfigurationFileExactPath);
+EXPORT	static SI_Error LoadConfiguration(const OTString & strConfigurationFileExactPath);
+EXPORT	static SI_Error SaveConfiguration(const OTString & strConfigurationFileExactPath);
 
 EXPORT	static bool ResetConfiguration();
 EXPORT	static bool IsConfigurationEmpty();
 
-	 // -------------------------------------------------
+
+// -------------------------------------------------
+// OT Paths
+//
+//  Get:  Returns a OTString of the Path, if the path is not set, returns: "".
+//  Set:  Sets Path from OTString in both Variable and Configuration, returns true if successful.
+//	RelativePathTo:  Converts a Relative Path, such as "/directory/file.x" to Canonical. ie. "/home/user/directory/file.x"
+//  Find: Finds and Sets the value programicaly from the defaults, returns true if successful. 
+//
+
+//		typedef std::shared_ptr<OTString> OTString_ptr;
+//		typedef std::pair<const char * const, OTString_ptr> pair_sz_str;
+//		typedef std::map<const char * const, OTString_ptr> map_sz_str;
+//
+//EXPORT	static pair_sz_str pairOTPath[]; // for almost static initialization of std::map 
+//EXPORT	static map_sz_str mapOTPath;
+
+EXPORT	static bool GetPath(const OTString & strPrivateVar, OTString & strPath);
+EXPORT	static bool GetPathFromConfig(const char * szPathName, OTString & strPath);
+EXPORT	static bool SetPath(const char * szPathName, OTString & strPrivateVar, const OTString & strPath);
+
+EXPORT	static bool RelativePathToCanonical(const OTString & strBasePath, const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool RelativePathToCanonicalLookup(const OTString & strPrivateVar, const OTString & strRelativePath, OTString & strCanonicalPath);
 
 
-EXPORT static bool FindUserDataLocation();
-EXPORT static bool FindOTDataLocation(OTString & strKeyName);
-EXPORT static bool FindOTDataLocation(OTString & strKeyName, OTString & strPathConfigFileExact);
-EXPORT static bool FindOTPath(OTString & strKeyName);
-EXPORT static bool FindOTPath(OTString & strKeyName, OTString & strOTDataFolderIniFileName);
+// ------------------------------------------------------------
+// OTPath Public Medum-Level Functions  (stil need to setup Config Before using these).
+//
+//
 
-EXPORT static OTString GetCurrentWorkingPath();
+// Home Path.  ie.  $HOME or APPDATA  eg. /home/user  or C:/Users/User/AppData/Roaming
+EXPORT	static bool GetHomePath(OTString & strHomePath);
+EXPORT	static bool GetHomePathFromConfig(OTString & strHomePath);
+EXPORT	static bool SetHomePath(const OTString & strHomePath, const bool bRelative);
+EXPORT	static bool RelativePathToHomePath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindHomePath();
 
-	 // -------------------------------------------------
+// Config Path ie. HomePath + '.ot'  eg.  /home/user/.ot  or C:/Users/User/AppData/Roaming/OpenTransactions
+EXPORT	static bool GetConfigPath(OTString & strConfigPath);
+EXPORT	static bool GetConfigPathFromConfig(OTString & strConfigPath);
+EXPORT	static bool SetConfigPath(const OTString & strConfigPath);
+EXPORT	static bool RelativePathToConfigPath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindConfigPath();
 
-EXPORT static bool SetExactOTPath(OTString & strOTPathExact);
+// Data Path ie. ConfigPath + 'client_data'  eg.  /home/user/.ot/client_data
+EXPORT	static bool GetDataPath(OTString & strDataPath);
+EXPORT	static bool GetDataPathFromConfig(OTString & strDataPath);
+EXPORT	static bool SetDataPath(const OTString & strDataPath);
+EXPORT	static bool RelativePathToDataPath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindDataPath(const OTString & strConfigKeyName);
+
+// Prefix Path ie.  ../ to /bin   eg.  /usr/local or /home/user/.local  or C:/Program Files/Open Transactions
+EXPORT	static bool GetPrefixPath(OTString & strPrefixPath);
+EXPORT	static bool GetPrefixPathFromConfig(OTString & strPrefixPath);
+EXPORT	static bool SetPrefixPath(const OTString & strPrefixPath);
+EXPORT	static bool RelativePathToPrefixPath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindPrefixPath();
+
+// Lib Path ie.  PrefixPath + /lib/opentxs  eg.  /usr/local/lib/opentxs  or C:/Program Files/Open Transactions/lib/
+EXPORT	static bool GetLibPath(OTString & strLibPath);
+EXPORT	static bool GetLibPathFromConfig(OTString & strLibPath);
+EXPORT	static bool SetLibPath(const OTString & strLibPath);
+EXPORT	static bool RelativePathToLibPath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindLibPath();
+
+// Header Scripts ie.  LibPath + /scripts  eg.  /usr/local/lib/opentxs/scripts  or C:/Program Files/Open Transactions/lib/scripts
+EXPORT	static bool GetScriptsPath(OTString & strScriptsPath);
+EXPORT	static bool GetScriptsPathFromConfig(OTString & strScriptsPath);
+EXPORT	static bool SetScriptsPath(const OTString & strScriptsPath);
+EXPORT	static bool RelativePathToScriptsPath(const OTString & strRelativePath, OTString & strCanonicalPath);
+EXPORT	static bool FindScriptsPath();
+
+// Sets and Gets the Path Separator, however this is mostly not used as "/" works on all oses.  (other than Winodws 9x).
+
+EXPORT	static bool	GetPathSeparator(OTString & strPathSeparator);
+EXPORT	static bool SetPathSeparator(const OTString & strPathSeparator);
+
+// Historical Fuctions
+EXPORT	static const char *	PathSeparator();
+EXPORT	static const char *	Path();
+
+
+// -------------------------------------------------
+// Helper Functions
+
+// Convert a Given Path to a Full Path.
+EXPORT	static bool PathtoRealPath(const OTString & strPath, OTString & strRealPath);
+
+// Finds the current Working Path and returns it.
+EXPORT	static bool GetCurrentWorkingPath(OTString & strCurrentWorkingPath);
+
+// Finds the Location of the Running Executable. ie. /usr/local/bin/ot
+EXPORT	static bool GetExecutablePath(OTString & strExecutablePath);
+
+// Finds the Location of the Running Executable. ie. /usr/local/bin/ot
+EXPORT	static bool GetUserDataPath(OTString & strUserDataPath);
+
+// -------------------------------------------------
+// Helper Functions
+
+// -------------------------------------------------
+// OTPath Public High-Level Functions.  Use These.
+
+//	
+//  bool SetupPaths(const OTString & strConfigKeyName)
+//
+//  This is the main function used when loading an OT app.
+//  The only thing that is needed to be supplied is the 'key-name'
+//  of the data directory.  Eg.  client_data or server_data.
+//
+//  This command use the strConfigKeyName as the directory default
+//	if the configuration is missing... It will also generate the entire
+//  'paths' section of the config (or only what is missing).
+//
+EXPORT	static bool SetupPaths(const OTString & strConfigKeyName);
+
 
 EXPORT	static void LogToFile(const char * szOutput);
 
@@ -267,44 +373,18 @@ EXPORT	static bool PushMemlogBack(const char * szLog);
 EXPORT	static void SleepSeconds(long lSeconds);
 EXPORT	static void SleepMilliseconds(long lMilliseconds);
 
-EXPORT	static OTString RelativeHomePathToExact(OTString & strRelativePath); // to $Home (example)
-EXPORT	static OTString RelativeDataPathToExact(OTString & strRelativePath);  // to $Home/.ot (example)
-EXPORT	static OTString RelativePathToExact(OTString & strRelativePath);  // to $Home/.ot/client_data (example)
-EXPORT	static OTString RelativeWorkingPathToExact(OTString & strRelativePath); // to $PWD (example)
+
 
 
 	// Used for making sure that certain necessary folders actually exist. (Creates them otherwise.)
 	// Creates inside Path(). IE:  <path>/szFolderName
-EXPORT	static bool ConfirmOrCreateFolder(const char * szFolderName);
-EXPORT	static bool ConfirmOrCreateExactFolder(const char * szFolderName);
-EXPORT	static bool ConfirmFile(const char * szFileName);
-EXPORT	static bool ConfirmExactFile(const char * szFileName);
-EXPORT	static bool ConfirmExactFile(const char * szFileName, long & lFileLength);
-EXPORT	static bool ConfirmExactPath(const char * szFileName); // This one expects fully-qualified path.
+EXPORT	static bool ConfirmOrCreateFolder(const OTString & strFolderName);
+EXPORT	static bool ConfirmOrCreateExactFolder(const OTString & strFolderName);
+EXPORT	static bool ConfirmFile(const OTString & strFileName);
+EXPORT	static bool ConfirmExactFile(const OTString & strFileName);
+EXPORT	static bool ConfirmExactFile(const OTString & strFileName, long & lFileLength);
+EXPORT	static bool ConfirmExactPath(const OTString & strFileName); // This one expects fully-qualified path.
 	
-	// OTPath is where all the subdirectories can be found.
-	// If the server is what's running, then it's the server folder.
-	// Otherwise it's the client folder.
-	
-	// ------------------------------------------------------------
-EXPORT static OTString OTPath();
-EXPORT	static const char *	Path();
-
-EXPORT	static const char *	PrefixPath();
-EXPORT	static const char *	ConfigPath();
-EXPORT	static const char *	PathSeparator();
-	
-EXPORT	static void SetMainPath(const char * szPath);
-EXPORT	static void SetConfigPath(const char * szConfigPath);
-EXPORT	static void SetPrefixPath(const char * szPrefixPath);
-EXPORT	static void SetPathSeparator(const char * szPathSeparator);
-
-EXPORT static OTString GetUserDataPath();		//e.g.  $HOME
-EXPORT static const char * UserDataPath();
-
-EXPORT static OTString OTDataPath();			//e.g.  $HOME/.ot
-EXPORT static const char * DataPath();
-
 	// ------------------------------------------------------------
 	
 EXPORT	static const char *	CronFolder();
