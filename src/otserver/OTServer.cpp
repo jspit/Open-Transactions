@@ -265,47 +265,6 @@ const char * OTTransaction::_TypeStrings[] =
 
 #include "OTLog.h"
 
-#ifdef _WIN32
-
-OTString OTLog::__OTPathSeparator = OT_DEFAULT_PATH_SEPARATOR;
-
-OTString OTLog::__OTPath("."); // it defaults to '.' but then it is set by the client and server.
-OTString OTLog::__OTConfigPath(OT_FOLDER_DEFAULT); // it defaults to "~/.ot" but then it is set by the client and server.
-OTString OTLog::__OTPrefixPath(OT_PREFIX_DEFAULT);
-OTString OTLog::__OTLogfile;
-
-#if defined (DSP)					   
-int OTLog::__CurrentLogLevel = 0;	// If you build with DSP=1, it assumes a special location for OpenSSL,
-#else								// and it turns off all the output.
-int OTLog::__CurrentLogLevel = 0;
-#endif
-
-bool	OTLog::__blocking = false;	// Normally false. This means we will wait FOREVER when trying to send or receive.
-int     OTLog::__latency_send_no_tries = 2; // Number of times will try to send a message.
-int     OTLog::__latency_receive_no_tries = 2; // Number of times will try to receive a reply.
-int     OTLog::__latency_send_ms = 5000; // number of ms to wait before retrying send.
-int     OTLog::__latency_receive_ms = 5000; // number of ms to wait before retrying receive.
-long	OTLog::__minimum_market_scale = 1;	// Server admin can configure this to any higher power-of-ten.
-
-OTString OTLog::__OTCronFolder				= "cron";
-OTString OTLog::__OTNymFolder				= "nyms";	
-OTString OTLog::__OTReceiptFolder			= "receipts";	
-OTString OTLog::__OTNymboxFolder			= "nymbox";		
-OTString OTLog::__OTAccountFolder			= "accounts";	
-OTString OTLog::__OTUserAcctFolder			= "useraccounts";	
-OTString OTLog::__OTInboxFolder				= "inbox";		
-OTString OTLog::__OTOutboxFolder			= "outbox";	
-OTString OTLog::__OTCertFolder				= "certs";		
-OTString OTLog::__OTPubkeyFolder			= "pubkeys";
-OTString OTLog::__OTContractFolder			= "contracts";
-OTString OTLog::__OTMintFolder				= "mints";
-OTString OTLog::__OTSpentFolder				= "spent";
-OTString OTLog::__OTMarketFolder			= "markets";
-OTString OTLog::__OTSmartContractsFolder	= "smartcontracts";
-
-OTString OTLog::__Version = "0.82.f";
-#endif
-
 #include "OTCron.h"
 #ifdef _WIN32
 int OTCron::__trans_refill_amount		= 500;		// The number of transaction numbers Cron will grab for itself, when it gets low, before each round.
@@ -1380,6 +1339,16 @@ void OTServer::Init(bool bReadOnly/*=false*/)
 		OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, 
 								 OTDB_DEFAULT_PACKER, OTLog::Path(), 
 								 "notaryServer.xml"); // todo stop hardcoding
+
+
+
+		//const OTString * pOTPath = OTLog::OTPath();
+		//OTString OTPath = * pOTPath;
+		//OTLog::vOutput(0,	"OTLog::Path(): %s:%p\n",OTPath.Get(),pOTPath);
+
+	OTLog::vOutput(0,	"OTLog::Path(): %s\n",OTLog::Path());
+
+
 	// -------------------------------------------------------
 	// These storage locations are client-only
 	//
@@ -1390,6 +1359,8 @@ void OTServer::Init(bool bReadOnly/*=false*/)
 
 	// These storage locations are common to client and server.
 	OTLog::ConfirmOrCreateFolder(OTLog::NymFolder());
+
+
 	OTLog::ConfirmOrCreateFolder(OTLog::ReceiptFolder());
 	OTLog::ConfirmOrCreateFolder(OTLog::NymboxFolder());
 	OTLog::ConfirmOrCreateFolder(OTLog::AccountFolder());

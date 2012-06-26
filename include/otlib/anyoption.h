@@ -162,8 +162,8 @@ EXPORT	void addUsage( const char *line );
 	/* 
          * get the argument count and arguments sans the options
          */
-	int   getArgc();
-	char* getArgv( int index );
+EXPORT	int   getArgc();
+EXPORT	char* getArgv( int index );
 EXPORT	bool  hasOptions();
 
 private: /* the hidden data structure */
