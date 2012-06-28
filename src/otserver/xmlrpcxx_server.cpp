@@ -849,7 +849,7 @@ int main(int argc, char* argv[])
 	//
 	OTLog::vOutput(0, 
 				   "\nNow loading the server nym, which will also ask you for a password, to unlock\n"
-				   "its private key.");
+				   "its private key.\n");
 	
 	pServer->Init(); // Keys, etc are loaded here. ===> Assumes main path is set! <===
 	

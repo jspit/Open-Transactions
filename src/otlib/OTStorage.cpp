@@ -284,7 +284,6 @@ OTDB::Storage * OTDB::details::s_pStorage= NULL;
 
 OTDB::mapOfFunctions * OTDB::details::pFunctionMap=NULL; // This is a pointer so I can control what order it is created in, on startup.
 
-
 const char * OTDB::StoredObjectTypeStrings[] = 
 {
 	"OTDBString",		// Just a string.
@@ -428,14 +427,8 @@ namespace OTDB
 	// up and running.  This function is the equivalent of doing all that, but with the
 	// DEFAULT storage object (which OT uses when none is specified.)
 	//
-	bool InitDefaultStorage(StorageType eStoreType, PackType ePackType,
-							std::string oneStr/*=""*/,  std::string twoStr/*=""*/,  std::string threeStr/*=""*/, 
-							std::string fourStr/*=""*/, std::string fiveStr/*=""*/, std::string sixStr/*=""*/)
+	bool InitDefaultStorage(StorageType eStoreType, PackType ePackType)
 	{	
-
-
-
-
 		// This allows you to call multiple times if you want to change the default storage.
 		//
 //		if (NULL != details::s_pStorage)
@@ -448,7 +441,7 @@ namespace OTDB
 		// ------------------------------
 		if (NULL == details::s_pStorage)
 		{
-			OTLog::Output(2, "OTDB::InitDefaultStorage: Existing storage context doesn't already exist. (Creating it.)\n");
+			OTLog::Output(2, "OTDB::InitDefaultStorage: Existing storage context doesn't already exist. (Creating it.)/n");
 			
 			details::s_pStorage = Storage::Create(eStoreType, ePackType);
 		}
@@ -457,12 +450,12 @@ namespace OTDB
 		
 		if (NULL == details::s_pStorage)
 		{
-			OTLog::Error("OTDB::InitDefaultStorage: Failed while calling OTDB::Storage::Create()\n");
+			OTLog::Error("OTDB::InitDefaultStorage: Failed while calling OTDB::Storage::Create()/n");
 			return false;
 		}
 
-		return details::s_pStorage->Init(oneStr, twoStr, threeStr, fourStr, fiveStr, sixStr);
-	}
+		return true;
+	};
 	
 	
 	// %newobject Factory::createObj();
@@ -2701,12 +2694,6 @@ namespace OTDB
 	// STORAGE FS  (OTDB::StorageFS is the filesystem version of OTDB::Storage.)
 	
 	
-	const char * StorageFS::PathSeparator()
-	{
-		return OTLog::PathSeparator(); // using OTLog for now.
-	} 
-
-	
 	// ConfirmOrCreateFolder()
 	// Used for making sure that certain necessary folders actually exist. (Creates them otherwise.)
 	//
@@ -2748,7 +2735,8 @@ namespace OTDB
 		const std::string & strFolder,      const std::string & oneStr/*=""*/,  
 		const std::string & twoStr/*=""*/,  const std::string & threeStr/*=""*/)
 	{
-		OTString zero, one, two, three, path, temp;
+		OTString zero, one, two, three, path, temp, strDataPath;
+		OTLog::GetPath_Data(strDataPath);
 		long lFileLength;
 
 		// Do we have anytihng at all?  Now check ing strFolder
@@ -2784,8 +2772,8 @@ namespace OTDB
 
 
 		// Zero...
-		if (zero.Compare(".")) OTLog::GetDataPath(path);  // if "." use path...
-		else OTLog::RelativePathToDataPath(zero,path);   // otherwise add dir to path.
+		if (zero.Compare(".")) path = strDataPath;  // if "." use path...
+		else OTLog::RelativePathToCanonical(path,strDataPath,zero);   // otherwise add dir to path.
 
 		strOutput = path.Get();  // set output path.
 
@@ -3051,11 +3039,10 @@ namespace OTDB
 	}
 	
 
-	
 	// ----------------------------------------------
 	// Constructor for Filesystem storage context. 
 	//
-	StorageFS::StorageFS() : Storage(), m_strFullPath(""), m_strWalletFile("")
+	StorageFS::StorageFS() : Storage()
 	{
 		
 	}
@@ -3064,40 +3051,6 @@ namespace OTDB
 	{
 		
 	}
-	
-
-	bool StorageFS::Init_Basic(OTString strWalletFilename){
-
-		if (strWalletFilename.Exists()){
-			OTString strFullWalletFilename;
-			OTLog::RelativePathToDataPath(strWalletFilename,strFullWalletFilename);
-			bool bWalletExists = OTLog::ConfirmExactPath(strFullWalletFilename.Get());
-			OT_ASSERT_MSG(bWalletExists, "StorageFS::Init_Basic: Unable To Loacate Wallet! Error!!");
-		};
-
-		m_strFullPath = OTLog::Path();
-		return true;
-	};
-
-	// ----------------------------------------------
-	//
-	// oneStr == Full path to data_folder  (ignored for now).
-	// twoStr == Wallet.xml filename
-	//
-	// (Three,Four,Five,Six are UNUSED in StorageFS.)
-	//
-	bool StorageFS::Init(std::string oneStr/*=""*/,  std::string twoStr/*=""*/,  std::string threeStr/*=""*/, 
-						 std::string fourStr/*=""*/, std::string fiveStr/*=""*/, std::string sixStr/*=""*/)
-	{
-		OTLog::vOutput(0,"StorageFS::Init: one: %s two: %s\n",oneStr.c_str(),twoStr.c_str());
-
-		OT_ASSERT_MSG((oneStr.length() > 3), "StorageFS::Init: Path Too Short!  Error!!");
-//		OT_ASSERT_MSG((twoStr.length() > 3), "StorageFS::Init: Wallet Filename too Short! Error!!");
-		OT_ASSERT_MSG((OTLog::Path() == oneStr), "StorageFS::Init: OTLog::Path() should be set before running this command!");
-
-		return StorageFS::Init_Basic(twoStr);
-	};
-	
 	
 	// -----------------------------------------
 	// See if the file is there.
@@ -3110,7 +3063,7 @@ namespace OTDB
 		return (ConstructAndConfirmPath(strOutput, strFolder, oneStr, twoStr, threeStr) > 0) ?
 			true : false;
 	}
-	
+
 	
 	// ********************************************************************
 	
