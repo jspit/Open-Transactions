@@ -148,7 +148,7 @@ using namespace std;
 #define SERVER_CONFIG_FILENAME "server.cfg"
 #define SERVER_LOGFILE_FILENAME "log-server.log"
 #define SERVER_MASTER_KEY_TIMEOUT_DEFAULT -1
-#define SERVER_MAIN_FILENAME "notaryServer.xml"
+#define SERVER_WALLET_FILENAME "notaryServer.xml"
 
 
 
@@ -968,10 +968,6 @@ bool OTServer::SaveMainFile()
 	// should be set in the servers configuration.
 	//
 
-	static OTString strMainFilename = SERVER_MAIN_FILENAME;		//we will overide it later.. (if we change it's name)
-	static OTString strMainFolder = ".";						// use "." for root of OTLog::Path()...
-	
-
     const char * szFunc         = "OTServer::SaveMainFile";
    
 
@@ -994,8 +990,9 @@ bool OTServer::SaveMainFile()
     
     if (false == ascTemp.WriteArmoredString(strFinal, "NOTARY")) // todo hardcoding.
     {
+		
         OTLog::vError("%s: Error saving notary (failed writing armored string):\n%s%s%s\n", szFunc,
-                      OTLog::Path(), OTLog::PathSeparator(), strMainFilename.Get());
+			m_strWalletFilePath.Get());
         return false;
     };
 
@@ -1003,11 +1000,11 @@ bool OTServer::SaveMainFile()
     // --------------------------------------------------------------------
 	// Save the Main File to the Harddrive... (or DB, if other storage module is being used).
 	//
-	const bool bSaved = OTDB::StorePlainString(strFinal.Get(),".", strMainFilename.Get());
+	const bool bSaved = OTDB::StorePlainString(strFinal.Get(),".", m_strWalletFilename.Get());
 	
 	if (!bSaved)  // Check if successfull.
 		OTLog::vError("%s: Error saving main file: %s%s%s\n", szFunc, 
-                      OTLog::Path(), OTLog::PathSeparator(), strMainFilename.Get());
+                      m_strWalletFilePath.Get());
 	
 	return bSaved;
 }
@@ -1020,51 +1017,49 @@ bool OTServer::LoadConfigFile()
 {	
 	SI_Error rc = SI_FAIL;
 
-	OTString strServerConfigFilename(SERVER_CONFIG_FILENAME);  // todo: stop hardcoding
-	OTString strServerConfigFilePath;
-	OTLog::RelativePathToDataPath(strServerConfigFilename,strServerConfigFilePath);
-	
-
 	// check if config file exists:
-	if (!OTLog::ConfirmExactFile(strServerConfigFilePath.Get())){
-		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",strServerConfigFilePath.Get());
+	if (!OTLog::ConfirmExactFile(m_strConfigFilePath.Get())){
+		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",m_strWalletFilePath.Get());
 
-		rc = OTLog::SaveConfiguration(strServerConfigFilePath);
+		rc = OTLog::SaveConfiguration(m_strConfigFilePath);
 		OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to save new configuration file!");
 
 		OTLog::ResetConfiguration(); // Reset Config... we are going to try reloading it.
 	};
 
 	// Load, this time it must work... or else fail.
-	rc = OTLog::LoadConfiguration(strServerConfigFilePath);
-	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable");
+	rc = OTLog::LoadConfiguration(m_strConfigFilePath);
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable\n");
 
 
 	// ---------------------------------------------
 	// LOG FILE
-	OTString strLogFilename, strLogFile;
 
-	OTLog::CheckSetConfig("logging","log_filename",SERVER_LOGFILE_FILENAME,strLogFilename);
-	OTLog::RelativePathToDataPath(strLogFilename,strLogFile);
-	OTLog::SetLogfile(strLogFile.Get());
-
+	OTLog::CheckSetConfig_str("logging","log_filename",m_strLogFilename.Get(),m_strLogFilename);
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strLogFilePath,m_strDataPath,m_strLogFilename),"ERROR: Unable to build Log FilePath");
+	OTLog::SetLogfile(m_strLogFilePath.Get());
 
 	// ---------------------------------------------
 	// LOG LEVEL
 
 	long lLogLevel;
-	OTLog::CheckSetConfig("logging","log_level",0,lLogLevel);
+	OTLog::CheckSetConfig_long("logging","log_level",0,lLogLevel);
 	OTLog::SetLogLevel((int)lLogLevel);
 
+	// ---------------------------------------------
+	// WALLET FILENAME
+	//
+	OTLog::CheckSetConfig_str("wallet","wallet_filename",m_strWalletFilename.Get(),m_strWalletFilename);
+	OTLog::vOutput(0,"Using Wallet Filename: %s\n",m_strWalletFilename.Get());
 
 	// ---------------------------------------------
 	// CRON
 	long lCronRefillAmount;
-	OTLog::CheckSetConfig("cron","refill_trans_number",500,lCronRefillAmount);
+	OTLog::CheckSetConfig_long("cron","refill_trans_number",500,lCronRefillAmount);
 	OTCron::SetCronRefillAmount((int)lCronRefillAmount);
 
 	long lCronMsBetweenProcess;
-	OTLog::CheckSetConfig("cron","ms_between_cron_beats",10000,lCronMsBetweenProcess);
+	OTLog::CheckSetConfig_long("cron","ms_between_cron_beats",10000,lCronMsBetweenProcess);
 	OTCron::SetCronMsBetweenProcess((int)lCronMsBetweenProcess);
 
 
@@ -1072,11 +1067,11 @@ bool OTServer::LoadConfigFile()
 	// HEARTBEAT
 
 	long lHeartbeatNoRequests;
-	OTLog::CheckSetConfig("heartbeat","no_requests",10,lHeartbeatNoRequests);
+	OTLog::CheckSetConfig_long("heartbeat","no_requests",10,lHeartbeatNoRequests);
 	OTServer::SetHeartbeatNoRequests((int)lHeartbeatNoRequests);
 
 	long lHeartbeatMsBetweenBeats;
-	OTLog::CheckSetConfig("heartbeat","ms_between_beats",100,lHeartbeatMsBetweenBeats);
+	OTLog::CheckSetConfig_long("heartbeat","ms_between_beats",100,lHeartbeatMsBetweenBeats);
 	OTServer::SetHeartbeatMsBetweenBeats((int)lHeartbeatMsBetweenBeats);
 
 
@@ -1084,27 +1079,27 @@ bool OTServer::LoadConfigFile()
 	// LATENCY
 
 	bool bBlocking;
-	OTLog::CheckSetBoolConfig("latency","blocking",OTLog::IsBlocking(),bBlocking);
+	OTLog::CheckSetConfig_bool("latency","blocking",OTLog::IsBlocking(),bBlocking);
 	OTLog::SetBlocking(bBlocking);
 	
 	// (SENDING)
 
 	long lLatencySendNoTries;
-	OTLog::CheckSetConfig("latency","send_fail_no_tries",OTLog::GetLatencySendNoTries(),lLatencySendNoTries);
+	OTLog::CheckSetConfig_long("latency","send_fail_no_tries",OTLog::GetLatencySendNoTries(),lLatencySendNoTries);
 	OTLog::SetLatencySendNoTries((int)lLatencySendNoTries);
 
 	long lLatencySendMs;
-	OTLog::CheckSetConfig("latency","send_fail_max_ms",OTLog::GetLatencySendMs(),lLatencySendMs);
+	OTLog::CheckSetConfig_long("latency","send_fail_max_ms",OTLog::GetLatencySendMs(),lLatencySendMs);
 	OTLog::SetLatencySendMs(lLatencySendMs);
 
 	// (RECEIVING)
 
 	long lLatencyReceiveNoTries;
-	OTLog::CheckSetConfig("latency","recv_fail_no_tries",OTLog::GetLatencyReceiveNoTries(),lLatencyReceiveNoTries);
+	OTLog::CheckSetConfig_long("latency","recv_fail_no_tries",OTLog::GetLatencyReceiveNoTries(),lLatencyReceiveNoTries);
 	OTLog::SetLatencyReceiveNoTries((int) lLatencyReceiveNoTries);
 
 	long lLatencyReceiveMs;
-	OTLog::CheckSetConfig("latency","recv_fail_max_ms",OTLog::GetLatencySendMs(),lLatencyReceiveMs);
+	OTLog::CheckSetConfig_long("latency","recv_fail_max_ms",OTLog::GetLatencySendMs(),lLatencyReceiveMs);
 	OTLog::SetLatencyReceiveMs((int) lLatencyReceiveMs);
 
 
@@ -1118,9 +1113,9 @@ bool OTServer::LoadConfigFile()
 	szOverrideNymID = stdstrOverrideNymID.c_str();
 
 	if (NULL == stdstrOverrideNymID.c_str())
-		OTLog::CheckSetConfig("permissions","override_nym_id",NULL,strOverrideNymID);
+		OTLog::CheckSetConfig_str("permissions","override_nym_id",NULL,strOverrideNymID);
 	else
-		OTLog::CheckSetConfig("permissions","override_nym_id",szOverrideNymID,strOverrideNymID);
+		OTLog::CheckSetConfig_str("permissions","override_nym_id",szOverrideNymID,strOverrideNymID);
 
 	OTServer::SetOverrideNymID(strOverrideNymID.Get());
 
@@ -1128,7 +1123,7 @@ bool OTServer::LoadConfigFile()
 	// MARKETS
 
 	long lMinMarketScale;
-	OTLog::CheckSetConfig("markets","minimum_scale",OTLog::GetMinMarketScale(),lMinMarketScale);
+	OTLog::CheckSetConfig_long("markets","minimum_scale",OTLog::GetMinMarketScale(),lMinMarketScale);
 	OTLog::SetMinMarketScale(lMinMarketScale);
 
 
@@ -1136,57 +1131,57 @@ bool OTServer::LoadConfigFile()
 	// SECURITY (beginnings of..)
 
 	long lTimeoutSeconds;
-	OTLog::CheckSetConfig("security","master_key_timeout",SERVER_MASTER_KEY_TIMEOUT_DEFAULT,lTimeoutSeconds);
+	OTLog::CheckSetConfig_long("security","master_key_timeout",SERVER_MASTER_KEY_TIMEOUT_DEFAULT,lTimeoutSeconds);
 	OTMasterKey::It()->SetTimeoutSeconds((int)lTimeoutSeconds);
 
 	// ---------------------------------------------
 	// (#defined right above this function.)
 	//
 
-	OTLog::SetConfigOptionBool("permissions", "admin_usage_credits",		__admin_usage_credits);
-	OTLog::SetConfigOptionBool("permissions", "admin_server_locked",		__admin_server_locked);
-	OTLog::SetConfigOptionBool("permissions", "cmd_usage_credits",			__cmd_usage_credits);
-	OTLog::SetConfigOptionBool("permissions", "cmd_issue_asset",			__cmd_issue_asset);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_contract",			__cmd_get_contract);
-	OTLog::SetConfigOptionBool("permissions", "cmd_check_server_id",		__cmd_check_server_id);
-	OTLog::SetConfigOptionBool("permissions", "cmd_create_user_acct",		__cmd_create_user_acct);
-	OTLog::SetConfigOptionBool("permissions", "cmd_del_user_acct",			__cmd_del_user_acct);
-	OTLog::SetConfigOptionBool("permissions", "cmd_check_user",				__cmd_check_user);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_request",			__cmd_get_request);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_trans_num",			__cmd_get_trans_num);
-	OTLog::SetConfigOptionBool("permissions", "cmd_send_message",			__cmd_send_message);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_nymbox",				__cmd_get_nymbox);
-	OTLog::SetConfigOptionBool("permissions", "cmd_process_nymbox",			__cmd_process_nymbox);
-	OTLog::SetConfigOptionBool("permissions", "cmd_create_asset_acct",		__cmd_create_asset_acct);
-	OTLog::SetConfigOptionBool("permissions", "cmd_del_asset_acct",			__cmd_del_asset_acct);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_acct",				__cmd_get_acct);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_inbox",				__cmd_get_inbox);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_outbox",				__cmd_get_outbox);
-	OTLog::SetConfigOptionBool("permissions", "cmd_process_inbox",			__cmd_process_inbox);
-	OTLog::SetConfigOptionBool("permissions", "cmd_issue_basket",			__cmd_issue_basket);
-	OTLog::SetConfigOptionBool("permissions", "transact_exchange_basket",	__transact_exchange_basket);
-	OTLog::SetConfigOptionBool("permissions", "cmd_notarize_transaction",	__cmd_notarize_transaction);
-	OTLog::SetConfigOptionBool("permissions", "transact_process_inbox",		__transact_process_inbox);
-	OTLog::SetConfigOptionBool("permissions", "transact_transfer",			__transact_transfer);
-	OTLog::SetConfigOptionBool("permissions", "transact_withdrawal",		__transact_withdrawal);
-	OTLog::SetConfigOptionBool("permissions", "transact_deposit",			__transact_deposit);
-	OTLog::SetConfigOptionBool("permissions", "transact_withdraw_voucher",	__transact_withdraw_voucher);
-	OTLog::SetConfigOptionBool("permissions", "transact_deposit_cheque",	__transact_deposit_cheque);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_mint",				__cmd_get_mint);
-	OTLog::SetConfigOptionBool("permissions", "transact_withdraw_cash",		__transact_withdraw_cash);
-	OTLog::SetConfigOptionBool("permissions", "transact_deposit_cash",		__transact_deposit_cash);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_market_list",		__cmd_get_market_list);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_market_offers",		__cmd_get_market_offers);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_market_recent_trades",__cmd_get_market_recent_trades);
-	OTLog::SetConfigOptionBool("permissions", "cmd_get_nym_market_offers",	__cmd_get_nym_market_offers);
-	OTLog::SetConfigOptionBool("permissions", "transact_market_offer",		__transact_market_offer);
-	OTLog::SetConfigOptionBool("permissions", "transact_payment_plan",		__transact_payment_plan);
-	OTLog::SetConfigOptionBool("permissions", "transact_cancel_cron_item",	__transact_cancel_cron_item);
-	OTLog::SetConfigOptionBool("permissions", "transact_smart_contract",	__transact_smart_contract);
-	OTLog::SetConfigOptionBool("permissions", "cmd_trigger_clause",			__cmd_trigger_clause);
+	OTLog::SetConfigOption_bool("permissions", "admin_usage_credits",		__admin_usage_credits);
+	OTLog::SetConfigOption_bool("permissions", "admin_server_locked",		__admin_server_locked);
+	OTLog::SetConfigOption_bool("permissions", "cmd_usage_credits",			__cmd_usage_credits);
+	OTLog::SetConfigOption_bool("permissions", "cmd_issue_asset",			__cmd_issue_asset);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_contract",			__cmd_get_contract);
+	OTLog::SetConfigOption_bool("permissions", "cmd_check_server_id",		__cmd_check_server_id);
+	OTLog::SetConfigOption_bool("permissions", "cmd_create_user_acct",		__cmd_create_user_acct);
+	OTLog::SetConfigOption_bool("permissions", "cmd_del_user_acct",			__cmd_del_user_acct);
+	OTLog::SetConfigOption_bool("permissions", "cmd_check_user",				__cmd_check_user);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_request",			__cmd_get_request);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_trans_num",			__cmd_get_trans_num);
+	OTLog::SetConfigOption_bool("permissions", "cmd_send_message",			__cmd_send_message);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_nymbox",				__cmd_get_nymbox);
+	OTLog::SetConfigOption_bool("permissions", "cmd_process_nymbox",			__cmd_process_nymbox);
+	OTLog::SetConfigOption_bool("permissions", "cmd_create_asset_acct",		__cmd_create_asset_acct);
+	OTLog::SetConfigOption_bool("permissions", "cmd_del_asset_acct",			__cmd_del_asset_acct);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_acct",				__cmd_get_acct);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_inbox",				__cmd_get_inbox);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_outbox",				__cmd_get_outbox);
+	OTLog::SetConfigOption_bool("permissions", "cmd_process_inbox",			__cmd_process_inbox);
+	OTLog::SetConfigOption_bool("permissions", "cmd_issue_basket",			__cmd_issue_basket);
+	OTLog::SetConfigOption_bool("permissions", "transact_exchange_basket",	__transact_exchange_basket);
+	OTLog::SetConfigOption_bool("permissions", "cmd_notarize_transaction",	__cmd_notarize_transaction);
+	OTLog::SetConfigOption_bool("permissions", "transact_process_inbox",		__transact_process_inbox);
+	OTLog::SetConfigOption_bool("permissions", "transact_transfer",			__transact_transfer);
+	OTLog::SetConfigOption_bool("permissions", "transact_withdrawal",		__transact_withdrawal);
+	OTLog::SetConfigOption_bool("permissions", "transact_deposit",			__transact_deposit);
+	OTLog::SetConfigOption_bool("permissions", "transact_withdraw_voucher",	__transact_withdraw_voucher);
+	OTLog::SetConfigOption_bool("permissions", "transact_deposit_cheque",	__transact_deposit_cheque);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_mint",				__cmd_get_mint);
+	OTLog::SetConfigOption_bool("permissions", "transact_withdraw_cash",		__transact_withdraw_cash);
+	OTLog::SetConfigOption_bool("permissions", "transact_deposit_cash",		__transact_deposit_cash);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_market_list",		__cmd_get_market_list);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_market_offers",		__cmd_get_market_offers);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_market_recent_trades",__cmd_get_market_recent_trades);
+	OTLog::SetConfigOption_bool("permissions", "cmd_get_nym_market_offers",	__cmd_get_nym_market_offers);
+	OTLog::SetConfigOption_bool("permissions", "transact_market_offer",		__transact_market_offer);
+	OTLog::SetConfigOption_bool("permissions", "transact_payment_plan",		__transact_payment_plan);
+	OTLog::SetConfigOption_bool("permissions", "transact_cancel_cron_item",	__transact_cancel_cron_item);
+	OTLog::SetConfigOption_bool("permissions", "transact_smart_contract",	__transact_smart_contract);
+	OTLog::SetConfigOption_bool("permissions", "cmd_trigger_clause",			__cmd_trigger_clause);
 
 	// Done Loading... Lets save any changes...
-	rc = OTLog::SaveConfiguration(strServerConfigFilePath);
+	rc = OTLog::SaveConfiguration(m_strConfigFilePath);
 	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to Save Configuration");
 
 	// Finsihed Saving... now lets cleanup!
@@ -1272,23 +1267,32 @@ void OTServer::Release()
 //
 void OTServer::Init(bool bReadOnly/*=false*/)
 {
-	LoadConfigFile(); // assumes main path is set.
+	// Set Defaults
+	m_strWalletFilename.Set(SERVER_WALLET_FILENAME);
+	m_strConfigFilename.Set(SERVER_CONFIG_FILENAME);
+	m_strLogFilename.Set(SERVER_LOGFILE_FILENAME);
+
+	// Server Data Path
+	OT_ASSERT_MSG(OTLog::GetPath_Data(m_strDataPath),
+		"OTServer::Init: Error! Unable to Find Data Path");
+
+	// Server Config Path
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strConfigFilePath,m_strDataPath,m_strConfigFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
+	LoadConfigFile(); // Load Config
+
+	// Wallet Path
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strWalletFilePath,m_strDataPath,m_strWalletFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
+
+
 	// ----------------------
-//	bool bSuccessInitDefault = 
-		//OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, 
-		//						 OTDB_DEFAULT_PACKER, OTLog::Path(), 
-		//						 "notaryServer.xml"); // todo stop hardcoding
+	//	bool bSuccessInitDefault = 
+	//OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, OTDB_DEFAULT_PACKER,SERVER_MAIN_FILENAME);
 
-
-				OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, 
-								 OTDB_DEFAULT_PACKER, OTLog::Path()); // todo stop hardcoding
-
-
-		//const OTString * pOTPath = OTLog::OTPath();
-		//OTString OTPath = * pOTPath;
-		//OTLog::vOutput(0,	"OTLog::Path(): %s:%p\n",OTPath.Get(),pOTPath);
-
-	OTLog::vOutput(0,	"OTLog::Path(): %s\n",OTLog::Path());
+	OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE,OTDB_DEFAULT_PACKER);
 
 
 	// -------------------------------------------------------
@@ -1424,25 +1428,16 @@ bool OTServer::LoadMainFile(bool bReadOnly/*=false*/)
 {
     const char *szFunc = "OTServer::LoadMainFile";
 	// --------------------------------------------------------------------
-	const char * szFoldername = "."; // todo stop hardcoding.
-	const char * szFilename = "notaryServer.xml"; // todo stop hardcoding.
-	
-	if (false == OTDB::Exists(szFoldername, szFilename)) OTServer::SaveMainFile();
+	//OT_ASSERT_MSG(OTServer::SaveMainFile(),"OTServer::LoadMainFile: Error! Failed to save Main File!");
 
-	if (false == OTDB::Exists(szFoldername, szFilename))
-	{
-		OTLog::vError("%s: %s%s%s does not exist.\n", szFunc, szFoldername, 
-					  OTLog::PathSeparator(), szFilename);
-		return false;
-	}
 	// --------------------------------------------------------------------
 	//
-	OTString strFileContents(OTDB::QueryPlainString(szFoldername, szFilename)); // <=== LOADING FROM DATA STORE.
+	
+	OTString strFileContents(OTDB::QueryPlainString(".",m_strWalletFilename.Get())); // <=== LOADING FROM DATA STORE.
 	
 	if (strFileContents.GetLength() < 2)
 	{
-		OTLog::vError("%s: Error reading file: %s%s%s\n", szFunc,
-					  szFoldername, OTLog::PathSeparator(), szFilename);
+		OTLog::vError("%s: Error reading file: %s\n", szFunc, m_strWalletFilePath.Get());
 		return false;
 	}
     
@@ -1493,7 +1488,7 @@ bool OTServer::LoadMainFile(bool bReadOnly/*=false*/)
                                                                          // We're doing this: "-----BEGIN OT ARMORED" (Should worked for escaped as well, here.)
             {
                 OTLog::vError("%s: Error loading file contents from ascii-armored encoding: %s%s%s.\n Contents: \n%s\n", szFunc,
-                              szFoldername, OTLog::PathSeparator(), szFilename, strFileContents.Get());
+                              m_strWalletFilePath.Get(), strFileContents.Get());
                 return false;
             }
             else // success loading the actual contents out of the ascii-armored version.
@@ -1522,7 +1517,7 @@ bool OTServer::LoadMainFile(bool bReadOnly/*=false*/)
         
         if (xmlFileContents.GetLength() < 2)
         {
-            OTLog::vError("%s: Error reading notary server file: %s\n", szFunc, szFilename);
+            OTLog::vError("%s: Error reading notary server file: %s\n", szFunc, m_strWalletFilename.Get());
             return false;
         }
         // --------------------------------------------------------------------
@@ -11100,7 +11095,7 @@ bool OTServer::ProcessUserCommand(OTMessage & theMessage, OTMessage & msgOut, OT
 	msgOut.m_strRequestNum.Set(theMessage.m_strRequestNum); // to prevent replay attacks.
 	
 	/*
-	 OTLog::SetConfigOptionBool("permissions", "admin_server_locked",		__admin_server_locked);
+	 OTLog::SetConfigOption_bool("permissions", "admin_server_locked",		__admin_server_locked);
 	 */
 	// ---------------------------------------------
 	if ((true == OTServer::__admin_server_locked) &&	// IF (the OT Server is in "lock down" mode)

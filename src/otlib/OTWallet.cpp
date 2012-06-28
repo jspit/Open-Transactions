@@ -1334,8 +1334,9 @@ bool OTWallet::SaveWallet(const char * szFilename/*=NULL*/)
         
         if (false == ascTemp.WriteArmoredString(strFinal, "WALLET")) // todo hardcoding.
         {
+			OTString strDataPath; OTLog::GetPath_Data(strDataPath);
             OTLog::vError("OTWallet::SaveWallet: Error saving wallet (failed writing armored string):\n%s%s%s\n", 
-                          OTLog::Path(), OTLog::PathSeparator(), m_strFilename.Get());
+				strDataPath.Get(), OTLog::PathSeparator(), m_strFilename.Get());
             return false;
         }
         // --------------------------------------------------------------------
@@ -1425,8 +1426,9 @@ bool OTWallet::LoadWallet(const char * szFilename)
                                                  OT_BEGIN_ARMORED)))     // Default is:       "-----BEGIN" 
                                                                          // We're doing this: "-----BEGIN OT ARMORED" (Should worked for escaped as well, here.)
             {
+				OTString strDataPath; OTLog::GetPath_Data(strDataPath);
                 OTLog::vError("OTWallet::LoadWallet: Error loading file contents from ascii-armored encoding: %s%s%s.\n Contents: \n%s\n", 
-                              OTLog::Path(), OTLog::PathSeparator(), szFilename, strFileContents.Get());
+                              strDataPath.Get(), OTLog::PathSeparator(), szFilename, strFileContents.Get());
                 return false;
             }
             else // success loading the actual contents out of the ascii-armored version.

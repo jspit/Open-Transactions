@@ -814,9 +814,9 @@ bool OTToken::GenerateTokenRequest(const OTPseudonym & theNym, OTMint & theMint,
 	SetSeriesAndExpiration(theMint.GetSeries(), theMint.GetValidFrom(), theMint.GetValidTo());
 	
 #ifdef _WIN32
-	OTString OpenSSLDumpFilename("openssl.dumpfile");
-	OTString OpenSSLDumpFileExact;
-	OTLog::RelativePathToDataPath(OpenSSLDumpFilename,OpenSSLDumpFileExact);
+	OTString OpenSSLDumpFileExact, strBasePath, OpenSSLDumpFilename("openssl.dumpfile");
+	OTLog::GetPath_Data(strBasePath);
+	OTLog::RelativePathToCanonical(OpenSSLDumpFileExact,strBasePath,OpenSSLDumpFilename);
 	SetDumper(OpenSSLDumpFileExact.Get());
 #else
 	SetDumper(stderr);
@@ -993,9 +993,9 @@ bool OTToken::ProcessToken(const OTPseudonym & theNym, OTMint & theMint, OTToken
 	
 	// Lucre
 #ifdef _WIN32
-	OTString OpenSSLDumpFilename("openssl.dumpfile");
-	OTString OpenSSLDumpFileExact;
-	OTLog::RelativePathToDataPath(OpenSSLDumpFilename,OpenSSLDumpFileExact);
+	OTString OpenSSLDumpFileExact, strBasePath, OpenSSLDumpFilename("openssl.dumpfile");
+	OTLog::GetPath_Data(strBasePath);
+	OTLog::RelativePathToCanonical(OpenSSLDumpFileExact,strBasePath,OpenSSLDumpFilename);
 	SetDumper(OpenSSLDumpFileExact.Get());
 #else
 	SetDumper(stderr);
