@@ -17,18 +17,23 @@ public class otapi {
     return ret;
   }
 
-  public static int OT_API_Init() {
-    int ret = otapiPINVOKE.OT_API_Init();
+  public static int OT_API_Init(string szDataFolderKey) {
+    int ret = otapiPINVOKE.OT_API_Init(szDataFolderKey);
     return ret;
   }
 
-  public static int OT_API_LoadWallet(string szWalletFilename) {
-    int ret = otapiPINVOKE.OT_API_LoadWallet(szWalletFilename);
+  public static int OT_API_SetWallet(string szWalletFilename) {
+    int ret = otapiPINVOKE.OT_API_SetWallet(szWalletFilename);
     return ret;
   }
 
-  public static int OT_API_SwitchWallet(string szDataFolderPath, string szWalletFilename) {
-    int ret = otapiPINVOKE.OT_API_SwitchWallet(szDataFolderPath, szWalletFilename);
+  public static int OT_API_LoadWallet() {
+    int ret = otapiPINVOKE.OT_API_LoadWallet();
+    return ret;
+  }
+
+  public static int OT_API_SwitchWallet() {
+    int ret = otapiPINVOKE.OT_API_SwitchWallet();
     return ret;
   }
 

@@ -228,16 +228,20 @@ def OT_API_Set_PasswordCallback(*args):
   return _otapi.OT_API_Set_PasswordCallback(*args)
 OT_API_Set_PasswordCallback = _otapi.OT_API_Set_PasswordCallback
 
-def OT_API_Init():
-  return _otapi.OT_API_Init()
+def OT_API_Init(*args):
+  return _otapi.OT_API_Init(*args)
 OT_API_Init = _otapi.OT_API_Init
 
-def OT_API_LoadWallet(*args):
-  return _otapi.OT_API_LoadWallet(*args)
+def OT_API_SetWallet(*args):
+  return _otapi.OT_API_SetWallet(*args)
+OT_API_SetWallet = _otapi.OT_API_SetWallet
+
+def OT_API_LoadWallet():
+  return _otapi.OT_API_LoadWallet()
 OT_API_LoadWallet = _otapi.OT_API_LoadWallet
 
-def OT_API_SwitchWallet(*args):
-  return _otapi.OT_API_SwitchWallet(*args)
+def OT_API_SwitchWallet():
+  return _otapi.OT_API_SwitchWallet()
 OT_API_SwitchWallet = _otapi.OT_API_SwitchWallet
 
 def OT_API_Output(*args):

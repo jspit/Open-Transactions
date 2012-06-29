@@ -129,6 +129,7 @@
 
 #define OT_OPTIONS_FILE_DEFAULT	"command-line-ot.opt"
 #define OT_PROMPT_HELPFILE "CLIENT-COMMANDS.txt"
+#define CLIENT_PATH_DEFAULT	"client_data" //should get programicaly
 
 
 
@@ -308,9 +309,8 @@ bool SetupPointersForWalletMyNymAndServerContract(std::string & str_ServerID,
     // load the wallet. (If there were NOT ANY OPTIONS, then we do NOT load the wallet,
     // although there is a COMMAND for doing that.)
     //
-    const OTString strTheWalletFilename("wallet.xml"); // todo stop hardcoding.
-    
-    OT_API::It().LoadWallet(strTheWalletFilename);
+
+    OT_API::It().LoadWallet();
 //	OT_API::It().GetWallet()->SaveWallet("NEWwallet.xml"); // todo remove this test code.
 
     // -----------------------------------------------------        
@@ -630,9 +630,16 @@ std::string OT_CLI_ReadUntilEOF()
 // (In D, this would be a nested function, but C++ doesn't support that
 // without using a nested class as a kludge.)
 //
-bool NewScriptHeaderExists(const char * szFilename, OTString * pstrPathOutput/*=NULL*/)
+bool NewScriptHeaderExists(const char * szFilename, OTString * pstrPathOutput)
 {
-    OT_ASSERT(NULL != szFilename);
+	OTString strFilename(szFilename);
+
+	OT_ASSERT_MSG(strFilename.Exists(),"NewScriptHeaderExists: Error! Filename not Supplied!");
+	if (3 > strFilename.GetLength()){
+		OTLog::vError("NewScriptHeaderExists: Filename: %s  is too short!/n",strFilename.Get());
+		OT_ASSERT(false);
+	};
+
     // ---------------------------------------
     struct stat st;
     struct stat * pst = &st;
@@ -643,24 +650,11 @@ bool NewScriptHeaderExists(const char * szFilename, OTString * pstrPathOutput/*=
     // and $(prefix)/lib/opentxs/scripts for the others..."
     //
     //
-    OTString strPath;       //   /usr/local   /   lib    /  opentxs  / ot_made_easy.ot
-    strPath.Format("%s%s%s%s%s%s%s", 
-                   OTLog::PrefixPath(),     //   /usr/local
-                   OTLog::PathSeparator(),  //   /
-                   "lib",                   //   lib
-                   OTLog::PathSeparator(),  //   /
-                   "opentxs",               //   opentxs
-                   OTLog::PathSeparator(),  //   /  
-                   szFilename);             //   ot_made_easy.ot
+    OTString strScriptsPath, strScriptPathFull;       //   /usr/local   /   lib    /  opentxs  / ot_made_easy.ot
+	OT_ASSERT_MSG(OTLog::GetPath_Scripts(strScriptsPath),"NewScriptHeaderExists: Unalbe to Get Scripts Path");
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(strScriptPathFull,strScriptsPath,strFilename),"NewScriptHeaderExists: Unalbe to Build Full Script Path");
     
-    OTString strPATH_OUTPUT;
-    
-    if (NULL == pstrPathOutput)
-        pstrPathOutput = &strPATH_OUTPUT;
-    
-    OTLog::TransformFilePath(strPath.Get(), *pstrPathOutput);
-    
-    return (0 == stat(pstrPathOutput->Get(), pst));
+    return OTLog::ConfirmExactFile(strScriptPathFull);
 }
 
 
@@ -683,6 +677,9 @@ bool RegisterAPIWithScript(OTScript & theBaseScript)
 	using namespace chaiscript;
 	
     const char * szFunc = "RegisterAPIWithScript";
+
+	OTString strDataPath;
+	OT_ASSERT_MSG(OTLog::GetPath_Data(strDataPath),"RegisterAPIWithScript: Must set Data Path first!");
     
     // In the future, this will be polymorphic.
 	// But for now, I'm forcing things...
@@ -1076,7 +1073,8 @@ bool RegisterAPIWithScript(OTScript & theBaseScript)
         }
         else if (OTDB::Exists(pss, pot, ps1)) // old style, in the data folder. (deprecated.)
         {
-            strUseFile1.Format(ps0,   OTLog::Path(), ps,	pss,	ps,		ps,		ps1);
+			
+            strUseFile1.Format(ps0,  strDataPath.Get() , ps,	pss,	ps,		ps,		ps1);
         }
         else
         {
@@ -1090,7 +1088,7 @@ bool RegisterAPIWithScript(OTScript & theBaseScript)
         }
         else if (OTDB::Exists(pss, pot, ps2)) // old style, in the data folder. (deprecated.)
         {
-            strUseFile2.Format(ps0,   OTLog::Path(), ps,	pss,	ps,		ps,		ps2);
+            strUseFile2.Format(ps0,   strDataPath.Get(), ps,	pss,	ps,		ps,		ps2);
         }
         else
         {
@@ -1104,7 +1102,7 @@ bool RegisterAPIWithScript(OTScript & theBaseScript)
         }
         else if (OTDB::Exists(pss, pot, ps3)) // old style, in the data folder. (deprecated.)
         {
-            strUseFile3.Format(ps0,   OTLog::Path(), ps,	pss,	ps,		ps,		ps3);
+            strUseFile3.Format(ps0,  strDataPath.Get(), ps,	pss,	ps,		ps,		ps3);
         }
         else
         {
@@ -1223,7 +1221,10 @@ void HandleCommandLineArguments( int argc, char* argv[], AnyOption * opt)
     if (NULL == opt)
         return;
     
-    
+    OTString strDataPath;
+	OT_ASSERT_MSG(OTLog::GetPath_Data(strDataPath),"HandleCommandLineArguments:  Must Set Data Path First!");
+
+
     /* 1. CREATE AN OBJECT */
 //    AnyOption *opt = new AnyOption();
 //    OT_ASSERT(NULL != opt);
@@ -1356,8 +1357,8 @@ void HandleCommandLineArguments( int argc, char* argv[], AnyOption * opt)
     
 	/* read options from a option/resource file with ':' separated options or flags, one per line */
 
-	OTString t(OT_OPTIONS_FILE_DEFAULT);
-	OTString strIniFileExact = OTLog::RelativeDataPathToExact(t);
+	OTString strOptionsFile(OT_OPTIONS_FILE_DEFAULT), strIniFileExact;
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(strIniFileExact,strDataPath,strOptionsFile),"Unalbe to set Full Path");
 
 	// -----------------------------------------------------
     opt->processFile( strIniFileExact.Get() );  
@@ -1496,7 +1497,7 @@ int main(int argc, char* argv[])
         {
             // OT_API class exists only on the client side.
             //
-            OT_API::InitOTAPI();     // SSL gets initialized in here, before any keys are loaded.       
+            OT_API::InitOTAPI(CLIENT_PATH_DEFAULT);     // SSL gets initialized in here, before any keys are loaded.       
         }
         ~__OTclient_RAII()
         {
@@ -1513,9 +1514,12 @@ int main(int argc, char* argv[])
 	// -------------------------------------------------------------------
 
 
-	OT_API::It().Init();   
+	OT_API::It().Init();
+
+	OTString strDataPath;
+	OT_ASSERT_MSG(OTLog::GetPath_Data(strDataPath),"RegisterAPIWithScript: Must set Data Path first!");
     
-	OTLog::vOutput(1, "Using client_data path:  %s\n", OTLog::Path());
+	OTLog::vOutput(1, "Using client_data path:  %s\n", strDataPath.Get());
     // -------------------------------------------------------------------
 	    
     // COMMAND-LINE OPTIONS (and default values from files.)
@@ -3169,8 +3173,10 @@ int main(int argc, char* argv[])
 		{
 			OTLog::Output(0, "User has instructed to display the help file...\n");
 			
-			OTString t(OT_PROMPT_HELPFILE);
-			OTString strFileDefaultExact = OTLog::RelativeDataPathToExact(t);
+			
+
+			OTString strPromptHelpfile(OT_PROMPT_HELPFILE), strFileDefaultExact;
+			OT_ASSERT_MSG(OTLog::RelativePathToCanonical(strFileDefaultExact,strDataPath,strPromptHelpfile),"Error: Unalbe to Build Full Path");
 
             OTString strResult;
             strResult.Format("more %s", strFileDefaultExact.Get());

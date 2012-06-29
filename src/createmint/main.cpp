@@ -207,7 +207,8 @@ int main (int argc, char * const argv[])
 			// ------------------------------------
 
 			OTString strServerKeyDefault(SERVER_PATH_DEFAULT);
-			bool bFindOTPath = OTLog::FindOTPath(strServerKeyDefault);
+
+			bool bFindOTPath = OTLog::SetupPaths(strServerKeyDefault);
 
 			OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
 
@@ -282,18 +283,23 @@ int main (int argc, char * const argv[])
 
 	for (nSeries = 0; nSeries < 10000; nSeries++)
 	{
-		struct stat st;
+//		struct stat st;
 
-		strMintPath.Format("%s%s%s%s%s%s%s%s%d", 
-			OTLog::Path(), 
-			OTLog::PathSeparator(),
-			OTLog::MintFolder(),
-			OTLog::PathSeparator(),
-			strServerID.Get(),
-			OTLog::PathSeparator(),
-			strAssetTypeID.Get(), ".", nSeries);
+		OTString strFilename;
+		strFilename.Format("%s%s%s",strAssetTypeID.Get(),".",nSeries);
 
-		bFileIsPresent = (stat(strMintPath.Get(), &st) == 0);
+		bFileIsPresent = OTDB::Exists(OTLog::MintFolder(),strServerID.Get(),strFilename.Get());
+
+		// Old Code
+		//strMintPath.Format("%s%s%s%s%s%s%s%s%d", 
+		//	OTLog::Path(), 
+		//	OTLog::PathSeparator(),
+		//	OTLog::MintFolder(),
+		//	OTLog::PathSeparator(),
+		//	strServerID.Get(),
+		//	OTLog::PathSeparator(),
+		//	strAssetTypeID.Get(), ".", nSeries);
+		//bFileIsPresent = (stat(strMintPath.Get(), &st) == 0);
 
 		if (!bFileIsPresent)
 			break;

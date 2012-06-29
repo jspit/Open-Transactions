@@ -78,6 +78,7 @@ ZEND_NAMED_FUNCTION(_wrap_OTCaller_callOne);
 ZEND_NAMED_FUNCTION(_wrap_OTCaller_callTwo);
 ZEND_NAMED_FUNCTION(_wrap_OT_API_Set_PasswordCallback);
 ZEND_NAMED_FUNCTION(_wrap_OT_API_Init);
+ZEND_NAMED_FUNCTION(_wrap_OT_API_SetWallet);
 ZEND_NAMED_FUNCTION(_wrap_OT_API_LoadWallet);
 ZEND_NAMED_FUNCTION(_wrap_OT_API_SwitchWallet);
 ZEND_NAMED_FUNCTION(_wrap_OT_API_Output);

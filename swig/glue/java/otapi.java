@@ -13,16 +13,20 @@ public class otapi implements otapiConstants {
     return otapiJNI.OT_API_Set_PasswordCallback(OTCaller.getCPtr(theCaller), theCaller);
   }
 
-  public static int OT_API_Init() {
-    return otapiJNI.OT_API_Init();
+  public static int OT_API_Init(String szDataFolderKey) {
+    return otapiJNI.OT_API_Init(szDataFolderKey);
   }
 
-  public static int OT_API_LoadWallet(String szWalletFilename) {
-    return otapiJNI.OT_API_LoadWallet(szWalletFilename);
+  public static int OT_API_SetWallet(String szWalletFilename) {
+    return otapiJNI.OT_API_SetWallet(szWalletFilename);
   }
 
-  public static int OT_API_SwitchWallet(String szDataFolderPath, String szWalletFilename) {
-    return otapiJNI.OT_API_SwitchWallet(szDataFolderPath, szWalletFilename);
+  public static int OT_API_LoadWallet() {
+    return otapiJNI.OT_API_LoadWallet();
+  }
+
+  public static int OT_API_SwitchWallet() {
+    return otapiJNI.OT_API_SwitchWallet();
   }
 
   public static void OT_API_Output(int nLogLevel, String szOutput) {

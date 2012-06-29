@@ -9524,19 +9524,17 @@ bool OTClient::SetFocusToServerAndNym(OTServerContract & theServerContract, OTPs
 /// Need to call this before using.
 bool OTClient::InitClient(OTWallet & theWallet)
 {
-	// already done
+	// only run once.
     //
 	if (m_bInitialized)
     {
         OTLog::vOutput(1, "OTClient::InitClient: Already initialized. (Returning true.)\n");
 		return false;
     }
-	// -----------------------
-    
 	m_bInitialized	= true;
+	// -----------------------
 	
-
-    
+	
     // UPDATE: SSL is now initialized in OTLog::OT_Init(), not in OTServerConnection.
     //
     // Old:
@@ -9586,8 +9584,8 @@ bool OTClient::InitClient(OTWallet & theWallet)
 	// openssl initialization
     // UPDATE: Moved to OTLog::OT_Init()
     //
-//	ERR_load_crypto_strings();  // Todo deal with error logging mechanism later.
-//	OpenSSL_add_all_algorithms();  
+	//	ERR_load_crypto_strings();  // Todo deal with error logging mechanism later.
+	//	OpenSSL_add_all_algorithms();  
 	
 	return true;
 }

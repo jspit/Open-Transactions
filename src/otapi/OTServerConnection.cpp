@@ -477,7 +477,7 @@ bool OTServerConnection::ProcessReply(u_header & theCMD, OTMessage & theServerRe
 	{
 		int  err = 0, nread = 0;
 		
-		char buffer[1024];
+//		char buffer[1024];
 		int sizeJunkData = 1020; // We'll make this a bit smaller than the buffer, for safety reasons.
 		
 		while (1)
@@ -823,8 +823,6 @@ void OTServerConnection::ProcessMessageOut(char *buf, int * pnExpectReply)
 	
 	bool bHandledIt = false;
 	
-    int  err;
-	uint32_t nwritten;
 	u_header theCMD; 
 	
 	
