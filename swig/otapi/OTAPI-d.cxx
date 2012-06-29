@@ -1463,37 +1463,45 @@ SWIGEXPORT unsigned int D_OT_API_Set_PasswordCallback(void * jarg1) {
 }
 
 
-SWIGEXPORT int D_OT_API_Init() {
-  int jresult ;
-  int result;
-  
-  result = (int)OT_API_Init();
-  jresult = result;
-  return jresult;
-}
-
-
-SWIGEXPORT int D_OT_API_LoadWallet(char * jarg1) {
+SWIGEXPORT int D_OT_API_Init(char * jarg1) {
   int jresult ;
   char *arg1 = (char *) 0 ;
   int result;
   
   arg1 = (char *)jarg1; 
-  result = (int)OT_API_LoadWallet((char const *)arg1);
+  result = (int)OT_API_Init((char const *)arg1);
   jresult = result;
   return jresult;
 }
 
 
-SWIGEXPORT int D_OT_API_SwitchWallet(char * jarg1, char * jarg2) {
+SWIGEXPORT int D_OT_API_SetWallet(char * jarg1) {
   int jresult ;
   char *arg1 = (char *) 0 ;
-  char *arg2 = (char *) 0 ;
   int result;
   
   arg1 = (char *)jarg1; 
-  arg2 = (char *)jarg2; 
-  result = (int)OT_API_SwitchWallet((char const *)arg1,(char const *)arg2);
+  result = (int)OT_API_SetWallet((char const *)arg1);
+  jresult = result;
+  return jresult;
+}
+
+
+SWIGEXPORT int D_OT_API_LoadWallet() {
+  int jresult ;
+  int result;
+  
+  result = (int)OT_API_LoadWallet();
+  jresult = result;
+  return jresult;
+}
+
+
+SWIGEXPORT int D_OT_API_SwitchWallet() {
+  int jresult ;
+  int result;
+  
+  result = (int)OT_API_SwitchWallet();
   jresult = result;
   return jresult;
 }

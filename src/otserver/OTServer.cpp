@@ -1015,11 +1015,17 @@ bool OTServer::SaveMainFile()
 
 bool OTServer::LoadConfigFile()
 {	
+	
+	// Server Config Path
+	m_strConfigFilename.Set(SERVER_CONFIG_FILENAME);
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strConfigFilePath,m_strDataPath,m_strConfigFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
 	SI_Error rc = SI_FAIL;
 
 	// check if config file exists:
 	if (!OTLog::ConfirmExactFile(m_strConfigFilePath.Get())){
-		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",m_strWalletFilePath.Get());
+		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",m_strConfigFilePath.Get());
 
 		rc = OTLog::SaveConfiguration(m_strConfigFilePath);
 		OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to save new configuration file!");
@@ -1034,7 +1040,7 @@ bool OTServer::LoadConfigFile()
 
 	// ---------------------------------------------
 	// LOG FILE
-
+	m_strLogFilename.Set(SERVER_LOGFILE_FILENAME);
 	OTLog::CheckSetConfig_str("logging","log_filename",m_strLogFilename.Get(),m_strLogFilename);
 	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strLogFilePath,m_strDataPath,m_strLogFilename),"ERROR: Unable to build Log FilePath");
 	OTLog::SetLogfile(m_strLogFilePath.Get());
@@ -1049,7 +1055,11 @@ bool OTServer::LoadConfigFile()
 	// ---------------------------------------------
 	// WALLET FILENAME
 	//
+	m_strWalletFilename.Set(SERVER_WALLET_FILENAME);
 	OTLog::CheckSetConfig_str("wallet","wallet_filename",m_strWalletFilename.Get(),m_strWalletFilename);
+	// Wallet Path
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strWalletFilePath,m_strDataPath,m_strWalletFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
 	OTLog::vOutput(0,"Using Wallet Filename: %s\n",m_strWalletFilename.Get());
 
 	// ---------------------------------------------
@@ -1267,25 +1277,11 @@ void OTServer::Release()
 //
 void OTServer::Init(bool bReadOnly/*=false*/)
 {
-	// Set Defaults
-	m_strWalletFilename.Set(SERVER_WALLET_FILENAME);
-	m_strConfigFilename.Set(SERVER_CONFIG_FILENAME);
-	m_strLogFilename.Set(SERVER_LOGFILE_FILENAME);
-
 	// Server Data Path
 	OT_ASSERT_MSG(OTLog::GetPath_Data(m_strDataPath),
 		"OTServer::Init: Error! Unable to Find Data Path");
 
-	// Server Config Path
-	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strConfigFilePath,m_strDataPath,m_strConfigFilename),
-		"OTServer::Init: Error! Unable to Build Wallet Path");
-
 	LoadConfigFile(); // Load Config
-
-	// Wallet Path
-	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(m_strWalletFilePath,m_strDataPath,m_strWalletFilename),
-		"OTServer::Init: Error! Unable to Build Wallet Path");
-
 
 
 	// ----------------------

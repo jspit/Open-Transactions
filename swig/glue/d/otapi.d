@@ -545,18 +545,23 @@ bool OT_API_Set_PasswordCallback(OTCaller theCaller) {
   return ret;
 }
 
-int OT_API_Init() {
-  auto ret = otapi_im.OT_API_Init();
+int OT_API_Init(char[] szDataFolderKey) {
+  auto ret = otapi_im.OT_API_Init((szDataFolderKey ? tango.stdc.stringz.toStringz(szDataFolderKey) : null));
   return ret;
 }
 
-int OT_API_LoadWallet(char[] szWalletFilename) {
-  auto ret = otapi_im.OT_API_LoadWallet((szWalletFilename ? tango.stdc.stringz.toStringz(szWalletFilename) : null));
+int OT_API_SetWallet(char[] szWalletFilename) {
+  auto ret = otapi_im.OT_API_SetWallet((szWalletFilename ? tango.stdc.stringz.toStringz(szWalletFilename) : null));
   return ret;
 }
 
-int OT_API_SwitchWallet(char[] szDataFolderPath, char[] szWalletFilename) {
-  auto ret = otapi_im.OT_API_SwitchWallet((szDataFolderPath ? tango.stdc.stringz.toStringz(szDataFolderPath) : null), (szWalletFilename ? tango.stdc.stringz.toStringz(szWalletFilename) : null));
+int OT_API_LoadWallet() {
+  auto ret = otapi_im.OT_API_LoadWallet();
+  return ret;
+}
+
+int OT_API_SwitchWallet() {
+  auto ret = otapi_im.OT_API_SwitchWallet();
   return ret;
 }
 

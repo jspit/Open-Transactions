@@ -43,16 +43,20 @@ abstract class otapi {
 		return OT_API_Set_PasswordCallback($theCaller);
 	}
 
-	static function OT_API_Init() {
-		return OT_API_Init();
+	static function OT_API_Init($szDataFolderKey) {
+		return OT_API_Init($szDataFolderKey);
 	}
 
-	static function OT_API_LoadWallet($szWalletFilename) {
-		return OT_API_LoadWallet($szWalletFilename);
+	static function OT_API_SetWallet($szWalletFilename) {
+		return OT_API_SetWallet($szWalletFilename);
 	}
 
-	static function OT_API_SwitchWallet($szDataFolderPath,$szWalletFilename) {
-		return OT_API_SwitchWallet($szDataFolderPath,$szWalletFilename);
+	static function OT_API_LoadWallet() {
+		return OT_API_LoadWallet();
+	}
+
+	static function OT_API_SwitchWallet() {
+		return OT_API_SwitchWallet();
 	}
 
 	static function OT_API_Output($nLogLevel,$szOutput) {

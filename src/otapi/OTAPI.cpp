@@ -229,16 +229,20 @@ void OT_API_Output(int nLogLevel, const char * szOutput)
 // To use this extern "C" API, you must call this function first.
 // (Therefore the same is true for all scripting languages that use this file...
 // Ruby, Python, Perl, PHP, etc.)
-OT_BOOL OT_API_Init()
+OT_BOOL OT_API_Init(const char * szDataFolderKey)
 {
-	//OT_ASSERT_MSG(NULL != szClientPath, "Null path passed to OT_API_Init");
+	OTString strDataFolderKey(szDataFolderKey);
+	if (strDataFolderKey.Exists() && 2 < strDataFolderKey.GetLength()) {
+		OTLog::vError("OT_API_Init: Bad Key: %s",strDataFolderKey.Get());
+		return OT_FALSE;
+	};
 	
 	static bool bOT_ClassInit		= false;	// OT_API::InitOTAPI()
 	static bool bOT_InstanceInit	= false;	// OT_API::It().Init(strClientPath)
 	
 	if (!bOT_ClassInit) // Hasn't been invoked yet..
 	{
-		bOT_ClassInit = OT_API::InitOTAPI();
+		bOT_ClassInit = OT_API::InitOTAPI(strDataFolderKey);
 		
 		if (!bOT_ClassInit)
 		{
@@ -256,18 +260,18 @@ OT_BOOL OT_API_Init()
 	if (!bOT_InstanceInit)	// But the instance init hasn't been invoked yet...
 	{
 		//OTString strClientPath(szClientPath);
-		
 		bOT_InstanceInit = OT_API::It().Init(); // <====  SSL gets initialized in here, before any keys are loaded.	
 		
 		if (!bOT_InstanceInit)
 		{
+			
 			OTLog::vError("OT_API_Init: Failure: OT_API::It().Init(strClientPath) returned false. Value of strClientPath: %s\n",
-				OTLog::Path());
+				OT_API::It().GetDataPath());
 			return OT_FALSE;
 		}
 		else
 			OTLog::vOutput(1, "OT_API_Init: Successfully invoked OT_API::It().Init(strClientPath) (instance initializer). Value of strClientPath: %s\n",
-						   OTLog::Path());
+			OT_API::It().GetDataPath());
 	}
 	// (else instance initializer was already invoked successfully.)
 	// -----------------------
@@ -276,25 +280,29 @@ OT_BOOL OT_API_Init()
 	return OT_TRUE;
 }
 
+OT_BOOL OT_API_SetWallet(const char * szWalletFilename) {
+
+	OTString strWalletFilename(szWalletFilename);
+	OT_ASSERT_MSG(strWalletFilename.Get(), "OT_API_LoadWallet: Null filename passed in.");
+
+	if (OT_API::It().SetWalletFilename(strWalletFilename)) return OT_TRUE;
+	else return OT_FALSE;
+};
 
 
-OT_BOOL OT_API_LoadWallet(const char * szWalletFilename)
+
+OT_BOOL OT_API_LoadWallet()
 {
-	OT_ASSERT_MSG(NULL != szWalletFilename, "OT_API_LoadWallet: Null filename passed in.");
-	
 	OT_ASSERT_MSG(OT_API::It().IsInitialized(), "OT_API_LoadWallet: Not initialized; call OT_API::Init first.");
 	
 	// ------------------------
 	//the g_OT_API now has:
-//	inline const char * GetStoragePath() { return ((NULL == m_pstrStoragePath) ? NULL : m_pstrStoragePath->Get()); }
-//	inline const char * GetWalletFilename() { return ((NULL == m_pstrWalletFilename) ? NULL : m_pstrWalletFilename->Get()); }
-//	inline bool SetStoragePath(const OTString & strPath) 
-//	inline bool SetWalletFilename(const OTString & strFilename) 
+	//inline const char * GetDataPath() { return ((NULL == m_pstrDataPath) ? NULL : m_pstrDataPath->Get()); }
+	//inline const char * GetWalletFilename() { return ((NULL == m_pstrWalletFilename) ? NULL : m_pstrWalletFilename->Get()); }
+	//inline const char * GetWalletFilePath() { return ((NULL == m_pstrWalletFilePath) ? NULL : m_pstrWalletFilePath->Get()); }
+	//inline const char * GetConfigFilename() { return ((NULL == m_pstrConfigFilename) ? NULL : m_pstrConfigFilename->Get()); }
 		
-	const OTString strWalletFilename(szWalletFilename);
-	
 	static bool bFirstSuccess = false;
-	
 	bool bLoaded = false;
 	
 	if (bFirstSuccess)
@@ -303,20 +311,20 @@ OT_BOOL OT_API_LoadWallet(const char * szWalletFilename)
 		return OT_FALSE;
 	}
 	else
-		bLoaded = OT_API::It().LoadWallet(strWalletFilename);
+		bLoaded = OT_API::It().LoadWallet();
 	// -------------------------
 	// By this point, we have TRIED to load the wallet...
 	//
 	if (bLoaded)
 	{
 		bFirstSuccess = true;
-		OTLog::vOutput(1, "OT_API_LoadWallet: Success invoking OT_API::It().LoadWallet with filename: %s\n",
-					   strWalletFilename.Get());
+		OTLog::vOutput(1, "OT_API_LoadWallet: Success invoking OT_API::It().LoadWallet with path: %s\n",
+			OT_API::It().GetWalletFilePath());
 		return OT_TRUE;
 	}
 	else
-		OTLog::vError("OT_API_LoadWallet: Failed invoking OT_API::It().LoadWallet with filename: %s\n",
-					  strWalletFilename.Get());
+		OTLog::vError("OT_API_LoadWallet: Failed invoking OT_API::It().LoadWallet with path: %s\n",
+					  OT_API::It().GetWalletFilePath());
 	
 	return OT_FALSE;
 }
@@ -324,31 +332,13 @@ OT_BOOL OT_API_LoadWallet(const char * szWalletFilename)
 
 
 
-OT_BOOL OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWalletFilename)
+OT_BOOL OT_API_SwitchWallet()
 {
-	OT_ASSERT_MSG(NULL != szDataFolderPath, "Null szDataFolderPath passed to OT_API_SwitchWallet");
-	OT_ASSERT_MSG(NULL != szWalletFilename, "Null szWalletFilename passed to OT_API_SwitchWallet");
-
 	OT_ASSERT_MSG(OT_API::It().IsInitialized(), "Not initialized; call OT_API::Init first.");
 
-	const OTString strWalletFilename(szWalletFilename);
+	OTString strWalletFilename(OT_API::It().GetWalletFilename());
 
-	// -------------------------------------------
-	const char * szOldStoragePath = OT_API::It().GetStoragePath();
-
-	OTString strOldStoragePath((NULL != szOldStoragePath) ? szOldStoragePath : "");	
-	// -------------------------------------------
-    OTString strPATH_OUTPUT;
-
-	OTString t(szDataFolderPath);
-	OTLog::SetExactOTPath(t);
-
-
-	// Keep this though.
-	OT_API::It().SetStoragePath(strPATH_OUTPUT); // Set to new path.
-	// -------------------------------------------
-
-	const bool bLoaded = OT_API::It().LoadWallet(strWalletFilename);
+	const bool bLoaded = OT_API::It().LoadWallet();
 	
 	if (bLoaded)
 	{
@@ -360,13 +350,8 @@ OT_BOOL OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWallet
 	{	
 		OTLog::vError("OT_API_SwitchWallet: Failed invoking OT_API::It().LoadWallet with filename: %s\n",
 					  strWalletFilename.Get());
-		
-		// Set back to OLD VALUES:
-		//
-		// OTLog::SetMainPath(strOldStoragePath.Get());  // remove this at some point, todo. This is the old way of doing it.
-		OT_API::It().SetStoragePath(strOldStoragePath); // Set to old path again.	
+
 	}
-	
 	return OT_FALSE;
 }
 

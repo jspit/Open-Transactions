@@ -209,13 +209,20 @@ public:
 
 class OT_API // The C++ high-level interface to the Open Transactions client-side.
 {
-	OTWallet *		m_pWallet;
-	OTClient *		m_pClient;
 
-	bool			m_bInitialized;
-	
-	OTString *		m_pstrStoragePath;
-	OTString *		m_pstrWalletFilename;
+	OTString *	m_pstrDataPath;
+
+	OTString *	m_pstrWalletFilename;
+	OTString *	m_pstrWalletFilePath;
+
+	OTString *	m_pstrConfigFilename;
+	OTString *	m_pstrConfigFilePath;
+
+	OTWallet *	m_pWallet;
+	OTClient *	m_pClient;
+
+	bool		m_bInitialized;
+	bool		m_bDefaultStore;
 	
     static tthread::mutex * s_p_ZMQ_Mutex;
 	static OTSocket       * s_p_Socket;
@@ -234,30 +241,36 @@ public:
 
 	inline OTClient * GetClient() { return m_pClient; }
 	
-	inline const char * GetStoragePath() { return ((NULL == m_pstrStoragePath) ? NULL : m_pstrStoragePath->Get()); }
+	inline const char * GetDataPath() { return ((NULL == m_pstrDataPath) ? NULL : m_pstrDataPath->Get()); }
 	inline const char * GetWalletFilename() { return ((NULL == m_pstrWalletFilename) ? NULL : m_pstrWalletFilename->Get()); }
-	
-	inline bool SetStoragePath(const OTString & strPath) 
-	{ return ((NULL == m_pstrStoragePath) ? false : (m_pstrStoragePath->Set(strPath), true) ); }
-	inline bool SetWalletFilename(const OTString & strFilename) 
-	{ return ((NULL == m_pstrWalletFilename) ? false : (m_pstrWalletFilename->Set(strFilename), true) ); }
-	
+	inline const char * GetWalletFilePath() { return ((NULL == m_pstrWalletFilePath) ? NULL : m_pstrWalletFilePath->Get()); }
+	inline const char * GetConfigFilename() { return ((NULL == m_pstrConfigFilename) ? NULL : m_pstrConfigFilename->Get()); }
+	inline const char * GetConfigFilePath() { return ((NULL == m_pstrConfigFilePath) ? NULL : m_pstrConfigFilePath->Get()); }
+
+	inline bool SetDataPath(const OTString & strPath) { return ((NULL == m_pstrDataPath) ? false : (m_pstrDataPath->Set(strPath), true) ); }
+	inline bool SetWalletFilename(const OTString & strPath) { return ((NULL == m_pstrWalletFilename) ? false : (m_pstrWalletFilename->Set(strPath), true) ); }
+	inline bool SetWalletFilePath(const OTString & strPath) { return ((NULL == m_pstrWalletFilePath) ? false : (m_pstrWalletFilePath->Set(strPath), true) ); }
+	inline bool SetConfigFilename(const OTString & strPath) { return ((NULL == m_pstrConfigFilename) ? false : (m_pstrConfigFilename->Set(strPath), true) ); }
+	inline bool SetConfigFilePath(const OTString & strPath) { return ((NULL == m_pstrConfigFilePath) ? false : (m_pstrConfigFilePath->Set(strPath), true) ); }
+
 	OT_API();
 	~OT_API();
     // --------------------------------------------------	
 	bool LoadConfigFile();
     // --------------------------------------------------
-			bool Init();	// Per instance.
+	bool Init();	// Per instance.
     // --------------------------------------------------
-    // calls OTLog::OT_Init();
-    static	bool InitOTAPI();						// Once per run.
+    // calls OTLog::OT_Init(const OTString & strDataFolderKey);
+    static	bool InitOTAPI(const OTString & strDataFolderKey);	// Once per run.
     
     // calls OTLog::OT_Cleanup();
 	static	bool CleanupOTAPI();                    // As the application shuts down gracefully...
     // --------------------------------------------------
 	bool IsInitialized() const { return m_bInitialized; }
-	
-	bool LoadWallet(const OTString & strFilename);
+
+	bool SetWallet(const OTString & strFilename);
+
+	bool LoadWallet();
 	
 	// Note: these two functions are NOT used in ZMQ Mode
 	// ONLY for SSL/TCP mode (deprecated)...

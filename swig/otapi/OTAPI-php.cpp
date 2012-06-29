@@ -4476,24 +4476,6 @@ fail:
 
 
 ZEND_NAMED_FUNCTION(_wrap_OT_API_Init) {
-  int result;
-  
-  SWIG_ResetError();
-  if(ZEND_NUM_ARGS() != 0) {
-    WRONG_PARAM_COUNT;
-  }
-  
-  result = (int)OT_API_Init();
-  {
-    ZVAL_LONG(return_value,result);
-  }
-  return;
-fail:
-  SWIG_FAIL();
-}
-
-
-ZEND_NAMED_FUNCTION(_wrap_OT_API_LoadWallet) {
   char *arg1 = (char *) 0 ;
   zval **args[1];
   int result;
@@ -4513,7 +4495,7 @@ ZEND_NAMED_FUNCTION(_wrap_OT_API_LoadWallet) {
   }
   /*@SWIG@*/;
   
-  result = (int)OT_API_LoadWallet((char const *)arg1);
+  result = (int)OT_API_Init((char const *)arg1);
   {
     ZVAL_LONG(return_value,result);
   }
@@ -4523,14 +4505,13 @@ fail:
 }
 
 
-ZEND_NAMED_FUNCTION(_wrap_OT_API_SwitchWallet) {
+ZEND_NAMED_FUNCTION(_wrap_OT_API_SetWallet) {
   char *arg1 = (char *) 0 ;
-  char *arg2 = (char *) 0 ;
-  zval **args[2];
+  zval **args[1];
   int result;
   
   SWIG_ResetError();
-  if(ZEND_NUM_ARGS() != 2 || zend_get_parameters_array_ex(2, args) != SUCCESS) {
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
     WRONG_PARAM_COUNT;
   }
   
@@ -4544,17 +4525,43 @@ ZEND_NAMED_FUNCTION(_wrap_OT_API_SwitchWallet) {
   }
   /*@SWIG@*/;
   
-  
-  /*@SWIG:C:\Users\Cameron Garnham\Documents\dev\swigwin-2.0.7\Lib\php\utils.i,62,CONVERT_STRING_IN@*/
-  if ((*args[1])->type==IS_NULL) {
-    arg2 = (char *) 0;
-  } else {
-    convert_to_string_ex(args[1]);
-    arg2 = (char *) Z_STRVAL_PP(args[1]);
+  result = (int)OT_API_SetWallet((char const *)arg1);
+  {
+    ZVAL_LONG(return_value,result);
   }
-  /*@SWIG@*/;
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_OT_API_LoadWallet) {
+  int result;
   
-  result = (int)OT_API_SwitchWallet((char const *)arg1,(char const *)arg2);
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 0) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  result = (int)OT_API_LoadWallet();
+  {
+    ZVAL_LONG(return_value,result);
+  }
+  return;
+fail:
+  SWIG_FAIL();
+}
+
+
+ZEND_NAMED_FUNCTION(_wrap_OT_API_SwitchWallet) {
+  int result;
+  
+  SWIG_ResetError();
+  if(ZEND_NUM_ARGS() != 0) {
+    WRONG_PARAM_COUNT;
+  }
+  
+  result = (int)OT_API_SwitchWallet();
   {
     ZVAL_LONG(return_value,result);
   }
@@ -31845,6 +31852,7 @@ static zend_function_entry otapi_functions[] = {
  SWIG_ZEND_NAMED_FE(otcaller_calltwo,_wrap_OTCaller_callTwo,NULL)
  SWIG_ZEND_NAMED_FE(ot_api_set_passwordcallback,_wrap_OT_API_Set_PasswordCallback,NULL)
  SWIG_ZEND_NAMED_FE(ot_api_init,_wrap_OT_API_Init,NULL)
+ SWIG_ZEND_NAMED_FE(ot_api_setwallet,_wrap_OT_API_SetWallet,NULL)
  SWIG_ZEND_NAMED_FE(ot_api_loadwallet,_wrap_OT_API_LoadWallet,NULL)
  SWIG_ZEND_NAMED_FE(ot_api_switchwallet,_wrap_OT_API_SwitchWallet,NULL)
  SWIG_ZEND_NAMED_FE(ot_api_output,_wrap_OT_API_Output,NULL)

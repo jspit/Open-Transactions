@@ -51,6 +51,7 @@ package otapi;
 
 *OT_API_Set_PasswordCallback = *otapic::OT_API_Set_PasswordCallback;
 *OT_API_Init = *otapic::OT_API_Init;
+*OT_API_SetWallet = *otapic::OT_API_SetWallet;
 *OT_API_LoadWallet = *otapic::OT_API_LoadWallet;
 *OT_API_SwitchWallet = *otapic::OT_API_SwitchWallet;
 *OT_API_Output = *otapic::OT_API_Output;

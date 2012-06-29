@@ -143,17 +143,33 @@
 /**
  INITIALIZE the OTAPI
  
- Call this first, to initialize the library. It needs to know the path
- to the data_folder, which on the client side is inside the testwallet folder.
+ Call this first, to initialize the library. It needs to know what
+ configuration value to lookup to find it's Data Folder.
+
+ If the configuration value doesn’t exist, it will be created, and a folder
+ of the same name will be used.
  
  Something like this:
  
- OT_BOOL bInit = OT_API_Init(); // we get it all automaticaly now :)
+ OT_BOOL bInit = OT_API_Init("client_data"); // 
  
  */
-int OT_API_Init(); // actually returns BOOL
+int OT_API_Init(const char * szDataFolderKey); // actually returns BOOL
 
 
+
+// --------------------------------------------------------------------
+/**
+ SET WALLET (optional)
+
+ This command will set the wallet filename in the configuration.
+ Use this command to change what wallet will be loaded with the
+ "LOAD WALLET" command.
+
+ e.g. OT_API_SetWallet("wallet2.xml");
+ 
+ */
+int OT_API_SetWallet(const char * szWalletFilename); // actually returns BOOL
 
 
 
@@ -162,29 +178,27 @@ int OT_API_Init(); // actually returns BOOL
  LOAD WALLET
  
  Next you'll want to load your wallet up. It needs to be in the data_folder.
- Just pass in the filename.  Like this:
+ The filename is set in the configuration. Use "SET WALLET FILENAME" to change it.
+
+ The Default Filename is "wallet.xml"
  
- OT_API_LoadWallet("wallet.xml");
+ OT_API_LoadWallet();
  
  */
-int OT_API_LoadWallet(const char * szWalletFilename); // actually returns BOOL
-
+int OT_API_LoadWallet(); // actually returns BOOL
 
 
 
 // --------------------------------------------------------------------
 /**
- SWITCH WALLET
+ SWITCH WALLET (experimental)
  
  Experimental.
- If you want to switch to a completely different wallet, at a completely
- different path, then call this function.
-  
- OT_API_SwitchWallet("/absolute-path-goes-here/.ot/client_data",
-                     "wallet.xml");
+ Set the new wallet with the "SET WALLET FILENAME" function.
+ Then call this function to switch to the new wallet.
  
  */
-int OT_API_SwitchWallet(const char * szDataFolderPath, const char * szWalletFilename); // actually returns OT_BOOL
+int OT_API_SwitchWallet(); // actually returns OT_BOOL
 
 
 

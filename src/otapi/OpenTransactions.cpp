@@ -205,8 +205,7 @@ using namespace tthread;
 #define CLIENT_CONFIG_FILENAME "client.cfg"
 #define CLIENT_LOGFILE_FILENAME "log-client.log"
 #define CLIENT_MASTER_KEY_TIMEOUT_DEFAULT 300
-
-#define MAIN_PATH_DEFAULT	"client_data"
+#define CLIENT_WALLET_FILENAME "wallet.xml"
 
 // -------------------------------------------------------------------------
 // When the server and client (this API being a client) are built in XmlRpc/HTTP
@@ -822,10 +821,15 @@ OT_API & OT_API::It()
 
 
 // The API begins here...
-
-
-OT_API::OT_API() : m_pWallet(NULL), m_pClient(NULL), m_bInitialized(false), 
-	m_pstrStoragePath(NULL), m_pstrWalletFilename(NULL)
+OT_API::OT_API() :
+	m_pWallet(NULL),
+	m_pClient(NULL),
+	m_bInitialized(false), 
+	m_pstrDataPath(NULL),
+	m_pstrWalletFilename(NULL),
+	m_pstrWalletFilePath(NULL),
+	m_pstrConfigFilename(NULL),
+	m_pstrConfigFilePath(NULL)
 {
 
 }
@@ -836,112 +840,137 @@ OT_API::~OT_API()
 {
     // DELETE
     //
-	if (NULL != m_pWallet)
-		delete m_pWallet;
-	if (NULL != m_pClient)
-		delete m_pClient;
-	if (NULL != m_pstrStoragePath)
-		delete m_pstrStoragePath;
-	if (NULL != m_pstrWalletFilename)
-		delete m_pstrWalletFilename;
+	if (NULL != m_pWallet)				delete m_pWallet;
+	if (NULL != m_pClient)				delete m_pClient;
+	if (NULL != m_pstrDataPath)			delete m_pstrDataPath;
+	if (NULL != m_pstrWalletFilename)	delete m_pstrWalletFilename;
+	if (NULL != m_pstrWalletFilePath)	delete m_pstrWalletFilePath;
+	if (NULL != m_pstrConfigFilename)	delete m_pstrConfigFilename;
+	if (NULL != m_pstrConfigFilePath)	delete m_pstrConfigFilePath;
+
 	// --------------------------------
     // SET NULL
     //
 	m_pWallet = NULL;
 	m_pClient = NULL;
 	
-	m_pstrStoragePath		= NULL;
-	m_pstrWalletFilename	= NULL;
+	m_pstrDataPath = NULL;
+	m_pstrWalletFilename = NULL;
+	m_pstrWalletFilePath = NULL;
+	m_pstrConfigFilename = NULL;
+	m_pstrConfigFilePath = NULL;
 }
-
-
 
 
 // Load the configuration file.
 // 
 bool OT_API::LoadConfigFile()
 {
+	// Set Config File
+	m_pstrConfigFilename->Set(CLIENT_CONFIG_FILENAME);
+
+	// Clean and Set m_pstrConfigFilePath
+	if (NULL != m_pstrConfigFilePath) m_pstrConfigFilePath = NULL; delete m_pstrConfigFilePath;
+	m_pstrConfigFilePath = new OTString();
+
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(*m_pstrConfigFilePath,*m_pstrDataPath,*m_pstrConfigFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
 	SI_Error rc = SI_FAIL;
 
-	OTString strClientConfigFilename = OTString(CLIENT_CONFIG_FILENAME);  // todo: stop hardcoding
-	OTString strClientConfigFilePath = OTLog::RelativePathToExact(strClientConfigFilename);
-
 	// check if config file exists:
-	if (!OTLog::ConfirmExactFile(strClientConfigFilePath.Get())){
-		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",strClientConfigFilePath.Get());
+	if (!OTLog::ConfirmExactFile(m_pstrConfigFilePath->Get())){
+		OTLog::vOutput(0,"OTServer::LoadConfigFile():  Config File Dosn't Exists ... Making it...\n Saved in: %s\n",m_pstrConfigFilePath->Get());
 
-		rc = OTLog::SaveConfiguration(strClientConfigFilePath);
+		rc = OTLog::SaveConfiguration(m_pstrConfigFilePath->Get());
 		OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to save new configuration file!");
 
 		OTLog::ResetConfiguration(); // Reset Config... we are going to try reloading it.
 	};
 
 	// Load, this time it must work... or else fail.
-	rc = OTLog::LoadConfiguration(strClientConfigFilePath);
+	rc = OTLog::LoadConfiguration(m_pstrConfigFilePath->Get());
 	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable");
 
 
 	// ---------------------------------------------
 	// LOG FILE
-	OTString strLogFilename, strLogFile;
+	OTString strLogFilename, strLogFilePath;
 
-	OTLog::CheckSetConfig("logging","log_filename",CLIENT_LOGFILE_FILENAME,strLogFilename);
+	OTLog::CheckSetConfig_str("logging","log_filename",CLIENT_LOGFILE_FILENAME,strLogFilename);
 
-	strLogFile = OTLog::RelativePathToExact(strLogFilename);
-	OTLog::SetLogfile(strLogFile.Get());
+	if (!OTLog::RelativePathToCanonical(strLogFilePath,*m_pstrDataPath,strLogFilename)) return false;
+
+	OTLog::SetLogfile(strLogFilePath.Get());
 
 	// ---------------------------------------------
 	// LOG LEVEL
 	long lLogLevel;
-	OTLog::CheckSetConfig("logging","log_level",0,lLogLevel);
+	OTLog::CheckSetConfig_long("logging","log_level",0,lLogLevel);
 	OTLog::SetLogLevel((int)lLogLevel);
+
+	// ---------------------------------------------
+	// WALLET FILENAME
+	//
+	// Clean and Set
+	if (NULL != m_pstrWalletFilename) m_pstrWalletFilename = NULL; delete m_pstrWalletFilename;
+	if (NULL != m_pstrWalletFilePath) m_pstrWalletFilePath = NULL; delete m_pstrWalletFilePath;
+	OTString * m_pstrWalletFilename = new OTString(), * m_pstrWalletFilePath = new OTString();
+
+	OTLog::CheckSetConfig_str("wallet","wallet_filename",CLIENT_WALLET_FILENAME,*m_pstrWalletFilename);
+
+	// Wallet Path
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(*m_pstrWalletFilePath,*m_pstrDataPath,*m_pstrWalletFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
+	OTLog::vOutput(0,"Using Wallet Filename: %s\n",m_pstrWalletFilename->Get());
 
 	// -----------------------------------
 	// LATENCY
 
 	bool bBlocking;
-	OTLog::CheckSetBoolConfig("latency","blocking",OTLog::IsBlocking(),bBlocking);
+	OTLog::CheckSetConfig_bool("latency","blocking",OTLog::IsBlocking(),bBlocking);
 	OTLog::SetBlocking(bBlocking);
 	
 	// (SENDING)
 	long lLatencyDelayAfter;
-	OTLog::CheckSetConfig("latency","send_delay_after",OTLog::GetLatencyDelayAfter(),lLatencyDelayAfter);
+	OTLog::CheckSetConfig_long("latency","send_delay_after",OTLog::GetLatencyDelayAfter(),lLatencyDelayAfter);
 	OTLog::SetLatencyDelayAfter((int)lLatencyDelayAfter);
 
 	long lLatencySendNoTries;
-	OTLog::CheckSetConfig("latency","send_fail_no_tries",OTLog::GetLatencySendNoTries(),lLatencySendNoTries);
+	OTLog::CheckSetConfig_long("latency","send_fail_no_tries",OTLog::GetLatencySendNoTries(),lLatencySendNoTries);
 	OTLog::SetLatencySendNoTries((int)lLatencySendNoTries);
 
 	long lLatencySendMs;
-	OTLog::CheckSetConfig("latency","send_fail_max_ms",OTLog::GetLatencySendMs(),lLatencySendMs);
+	OTLog::CheckSetConfig_long("latency","send_fail_max_ms",OTLog::GetLatencySendMs(),lLatencySendMs);
 	OTLog::SetLatencySendMs(lLatencySendMs);
 
 	// (RECEIVING)
 	long lLatencyReceiveNoTries;
-	OTLog::CheckSetConfig("latency","recv_fail_no_tries",OTLog::GetLatencyReceiveNoTries(),lLatencyReceiveNoTries);
+	OTLog::CheckSetConfig_long("latency","recv_fail_no_tries",OTLog::GetLatencyReceiveNoTries(),lLatencyReceiveNoTries);
 	OTLog::SetLatencyReceiveNoTries((int) lLatencyReceiveNoTries);
 
 	long lLatencyReceiveMs;
-	OTLog::CheckSetConfig("latency","recv_fail_max_ms",OTLog::GetLatencySendMs(),lLatencyReceiveMs);
+	OTLog::CheckSetConfig_long("latency","recv_fail_max_ms",OTLog::GetLatencySendMs(),lLatencyReceiveMs);
 	OTLog::SetLatencyReceiveMs((int) lLatencyReceiveMs);
 
 
 	// ---------------------------------------------
 	// MARKETS
 	long lMinMarketScale;
-	OTLog::CheckSetConfig("markets","minimum_scale",OTLog::GetMinMarketScale(),lMinMarketScale);
+	OTLog::CheckSetConfig_long("markets","minimum_scale",OTLog::GetMinMarketScale(),lMinMarketScale);
 	OTLog::SetMinMarketScale(lMinMarketScale);
 
 
 	// ---------------------------------------------
 	// SECURITY (beginnings of..)
 	long lTimeoutSeconds;
-	OTLog::CheckSetConfig("security","master_key_timeout",CLIENT_MASTER_KEY_TIMEOUT_DEFAULT,lTimeoutSeconds);
+	OTLog::CheckSetConfig_long("security","master_key_timeout",CLIENT_MASTER_KEY_TIMEOUT_DEFAULT,lTimeoutSeconds);
 	OTMasterKey::It()->SetTimeoutSeconds((int)lTimeoutSeconds);
 
 
 	// Done Loading... Lets save any changes...
-	rc = OTLog::SaveConfiguration(strClientConfigFilePath);
+	rc = OTLog::SaveConfiguration(m_pstrConfigFilePath->Get());
 	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to Save Configuration");
 
 	// Finsihed Saving... now lets cleanup!
@@ -962,8 +991,10 @@ bool OT_API::LoadConfigFile()
 // (No big deal -- none of them will use TCP anyway...)
 //
 //static
-bool OT_API::InitOTAPI()
+bool OT_API::InitOTAPI(const OTString & strDataFolderKey)
 {
+	OT_ASSERT_MSG((strDataFolderKey.Exists() && 2 < strDataFolderKey.GetLength()),"OT_API::InitOTAPI: bad keyname");
+
     static int nCount = 0;
     OT_ASSERT_MSG(0 == nCount, "OT_API::InitOTAPI: ASSERT: This function can only be called once.\n");
     ++nCount;
@@ -1023,13 +1054,7 @@ bool OT_API::InitOTAPI()
     //
 
 	// Setup OTPath:
-
-	OTString strMainKeyDefault(MAIN_PATH_DEFAULT);
-	bool bFindOTPath = OTLog::FindOTPath(strMainKeyDefault);
-	OT_ASSERT_MSG(bFindOTPath, "main(): Assert failed: Failed to set OT Path");
-
-	OTString strOTPath(OTLog::Path());
-
+	OT_ASSERT_MSG(OTLog::SetupPaths(strDataFolderKey),"OT_API::InitOTAPI: Failed to Setup Paths");
 
 	return true;
 }
@@ -1078,40 +1103,18 @@ bool OT_API::CleanupOTAPI()
 //
 bool OT_API::Init()
 {
-	// TODO: Main path needs to be stored in OT_API global, not OTLog static.
-	//		 This way, you can have multiple instances of OT_API,
-	//		 Each with their own main path. This is necessary.
-	//		 Now that the OT_API class exists might be time to take
-	//       folders away from OTLog and move it all over. Ugh.
-	// OR!! Maybe just code a mechanism so OTLog tracks the instances of OT_API.
-
-	OT_ASSERT_MSG(OTLog::ConfirmExactPath(OTLog::Path()), "OT_API::Init: Empty path passed in.");
-	
     const char * szFunc = "OT_API::Init";
+
+	OTString strDataPath;
+	OT_ASSERT_MSG(OTLog::GetPath_Data(strDataPath),"OT_API::Init(): Error! Data Path Not Set!");
     
 	if (true == m_bInitialized)
 	{
-		OTLog::vError("%s: OTAPI was already initialized. (Skipping.) Ignoring path %s because already using path: %s\n", 
-					  szFunc, OTLog::Path(), GetStoragePath());
+		OTLog::vError("%s: OTAPI was already initialized. (Skipping) and Using path: %s\n", 
+					  szFunc, strDataPath.Get());
 		return true;
 	}
-//	OT_ASSERT_MSG(false == m_bInitialized, "OTAPI was already initialized, please do not call it twice.");
-    // ---------------------------------------
-	
-//    OTLog::TransformFilePath(strClientPath.Get(), strPATH_OUTPUT);
-    
-//	OTLog::vError("**** OT_API::Init: strClientPath: %s   strPATH_OUTPUT: %s \n",
-//				  strClientPath.Get(), strPATH_OUTPUT.Get());
-	/*
-	 ****	OT_API::Init:	
-	 strClientPath:		/Users/au/Library/Application Support/.ot/client_data
-	 strPATH_OUTPUT:	/Users/au/Library/Application 
-	 */
-	
-	// At some point, remove this, since each instance of OT API should eventually store its OWN path.
-//	OTLog::SetMainPath(strPATH_OUTPUT.Get()); // This currently does NOT support multiple instances of OT_API.  :-(
-	// -------------------------------------
-	
+
 	static bool bConstruct = false;
 	
 	if (false == bConstruct)
@@ -1121,129 +1124,109 @@ bool OT_API::Init()
 		m_pWallet = new OTWallet;
 		m_pClient = new OTClient;
 		
-		m_pstrStoragePath		= new OTString;
+		m_pstrDataPath			= new OTString;
 		m_pstrWalletFilename	= new OTString;
+		m_pstrWalletFilePath	= new OTString;
+		m_pstrConfigFilename	= new OTString;
 
 		OT_ASSERT_MSG(NULL != m_pWallet, "Error allocating memory for m_pWallet in OT_API::Init");
 		OT_ASSERT_MSG(NULL != m_pClient, "Error allocating memory for m_pClient in OT_API::Init");
-		OT_ASSERT_MSG(NULL != m_pstrStoragePath, "Error allocating memory for m_pstrStoragePath in OT_API::Init");
+		OT_ASSERT_MSG(NULL != m_pstrDataPath, "Error allocating memory for m_pstrStoragePath in OT_API::Init");
 		OT_ASSERT_MSG(NULL != m_pstrWalletFilename, "Error allocating memory for m_pstrWalletFilename in OT_API::Init");
 		// ----------------------------		
-		LoadConfigFile();
-	}
+	};
+
+	m_pstrDataPath->Set(strDataPath);  // Set Data Path;
+
+	LoadConfigFile(); // Load Configuration, inc. Default Wallet Filename.
 	
-	// Keep this though.
-	SetStoragePath(OTLog::OTPath()); // sets m_pstrStoragePath
-
-	// -------------------------------------
-	std::string strPath = OTLog::Path();
-
 	// This way, everywhere else I can use the default storage context (for now) and it will work
 	// everywhere I put it. (Because it's now set up...)
 	//
-	const bool bDefaultStore = OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, OTDB_DEFAULT_PACKER, strPath); // notice no wallet filename is passed here... InitDefaultStorage() will thus get called again...
+	m_bDefaultStore = OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, OTDB_DEFAULT_PACKER); // We only need to do this once now.
 	
-	if (bDefaultStore) // success initializing default storage on OTDB.
+	if (m_bDefaultStore) // success initializing default storage on OTDB.
 	{
-		OTLog::vOutput(1, "%s: Success invoking OTDB::InitDefaultStorage with path: %s\n",
-					   szFunc, strPath.c_str());
+		OTLog::vOutput(1, "%s: Success invoking OTDB::InitDefaultStorage");
 		
-		if (m_bInitialized)
-			OTLog::vOutput(1, "%s: m_pClient->InitClient() was already initialized. (Skipping.)\n", szFunc);
-		else
-		{
+		if (m_bInitialized) OTLog::vOutput(1, "%s: m_pClient->InitClient() was already initialized. (Skipping.)\n", szFunc);
+		else {
 			m_bInitialized = m_pClient->InitClient(*m_pWallet);
 			// -----------------------------
-			if (m_bInitialized)
-				OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc, OTLog::Path());
-			else
-				OTLog::vError("%s: Failed invoking m_pClient->InitClient() with path: %s \n", 
-							  szFunc, OTLog::Path());
+			if (m_bInitialized) OTLog::vOutput(1, "%s: Success invoking m_pClient->InitClient() with path: %s\n", szFunc);
+			else OTLog::vError("%s: Failed invoking m_pClient->InitClient()\n", szFunc);
 		}
 		return m_bInitialized;
 	}
-	else
-		OTLog::vError("%s: Failed invoking OTDB::InitDefaultStorage with path: %s\n", 
-                      szFunc, strPath.c_str());
+	else OTLog::vError("%s: Failed invoking OTDB::InitDefaultStorage\n", szFunc);
 
 	// -------------------------------------
 	
 	return false;
 }
 
+bool OT_API::SetWallet(const OTString & strFilename) {
+
+	OT_ASSERT_MSG((m_bInitialized),"OT_API::SetWalletFilename: Not initialized; call OT_API::Init first.");
+
+	OT_ASSERT_MSG(strFilename.Exists(),"OT_API::SetWalletFilename: strFilename dose not exist!");
+	OT_ASSERT_MSG((3 < strFilename.GetLength()),"OT_API::SetWalletFilename: strFilename is too short!");
+
+	// Set New Wallet Filename
+	OTLog::vOutput(0,"Setting Wallet Filename... /n");
+	if (strFilename.Compare(m_pstrWalletFilename->Get())) {
+		OTLog::vOutput(0, "Wallet Filename: %s  is same as in configuration. (skipping)",strFilename.Get());
+		return true;
+	};
+
+	SI_Error rc = SI_FAIL;
+
+	// Load Config
+	rc = OTLog::LoadConfiguration(m_pstrConfigFilePath->Get());
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to load config file, file unloadable");
+
+	// Set New Wallet Filename
+	if (NULL != m_pstrWalletFilename) m_pstrWalletFilename = NULL; delete m_pstrWalletFilename;
+	m_pstrWalletFilename = new OTString(strFilename);
+	OTLog::SetConfig_str("wallet","wallet_filename",m_pstrWalletFilename->Get());
+
+	// Save Config and cleanup
+	rc = OTLog::SaveConfiguration(m_pstrConfigFilePath->Get());
+	OT_ASSERT_MSG(rc >=0, "OTServer::LoadConfigFile(): Assert failed: Unable to Save Configuration");
+	OTLog::ResetConfiguration();
+
+	// Set New Wallet Path
+	if (NULL != m_pstrWalletFilePath) m_pstrWalletFilePath = NULL; delete m_pstrWalletFilePath;
+	m_pstrWalletFilePath = new OTString();
+	OT_ASSERT_MSG(OTLog::RelativePathToCanonical(*m_pstrWalletFilePath,*m_pstrDataPath,*m_pstrWalletFilename),
+		"OTServer::Init: Error! Unable to Build Wallet Path");
+
+	OTLog::vOutput(0,"Updated Wallet Path: %s /n",m_pstrWalletFilePath->Get());
+
+	return true;
+};
 
 
-// "wallet.xml" (path set above.)
-bool OT_API::LoadWallet(const OTString & strFilename)
+bool OT_API::LoadWallet()
 {
+	const char * szFunc = "OT_API::LoadWallet";
+	
 	OT_ASSERT_MSG(m_bInitialized, "Not initialized; call OT_API::Init first.");
-	OT_ASSERT(strFilename.Exists());
-	OT_ASSERT(NULL != m_pWallet);
-	
-    const char * szFunc = "OT_API::LoadWallet";
+	OT_ASSERT_MSG(m_bDefaultStore, "Default Storage not Initialized; call OT_API::Init first.");
     
-	// ----------------------------
-	// Grab the old name for safe keeping..
-	//
-	const char * szOldFilename = GetWalletFilename();
-	
-	const OTString strOldName((NULL == szOldFilename) 
-							  ? 
-							  "wallet.xml" // todo stop hardcoding this DEFAULT VALUE.
-							  : szOldFilename);
-	// ----------------------------
-	// set to new name.
-	//
-	SetWalletFilename(strFilename); 
-	// ------------------------------------------
-	bool bSuccess = false;
+	OTString strDataPath(GetDataPath()), strWalletFilename(GetWalletFilename());
 
-	const char * pstrStoragePath	= GetStoragePath();
-	const char * pstrWalletFilename	= GetWalletFilename();
-	
-	if (NULL == pstrStoragePath)
-		OTLog::vError("%s: StoragePath is NULL. Have you called OT_API_Init() yet?\n", szFunc);
-	else if (NULL == pstrWalletFilename || !strFilename.Exists())
-		OTLog::vError("%s: WalletFilename is NULL or otherwise nonexistent.\n", szFunc);
-	// ------------------------------------------
-	else // NAMES ARE IN ORDER, so let's INIT DEFAULT STORAGE...
-	{
-		std::string strDataFolderPath(pstrStoragePath);
-		std::string strWalletFilename(pstrWalletFilename);
-		
-		// This way, everywhere else I can use the default storage context (for now) and it will work
-		// everywhere I put it. (Because it's now set up...)
+	OT_ASSERT_MSG(strDataPath.Exists(), "Error: Data Path: Data Path not set!");
+	OT_ASSERT_MSG(strWalletFilename.Exists(), "Error: No Wallet: Wallet Filename not set!");
 
-		bool bSuccessInitDefault = OTDB::InitDefaultStorage(OTDB_DEFAULT_STORAGE, OTDB_DEFAULT_PACKER, strDataFolderPath, strWalletFilename);
+	// Atempt Load
+	OTLog::vOutput(0,"m_pWallet->LoadWallet() with: %s\n",GetWalletFilename());
+	bool bSuccess = m_pWallet->LoadWallet(GetWalletFilename());
 
-		if (!bSuccessInitDefault)
-			OTLog::vError("%s: Failed invoking OTDB::InitDefaultStorage with path: %s and wallet filename: %s\n",
-						  szFunc, strDataFolderPath.c_str(), strWalletFilename.c_str());
-		// ------------------------------------------
-		else // Success initializing default storage.
-		{
-			OTLog::vOutput(0,"m_pWallet->LoadWallet() with: %s\n",GetWalletFilename());
-			bSuccess = m_pWallet->LoadWallet(GetWalletFilename());
-			
-			if (false == bSuccess)
-				OTLog::vError("%s: Failed invoking m_pWallet->LoadWallet() with data folder %s and filename: %s\n", 
-							  szFunc, strDataFolderPath.c_str(), GetWalletFilename());
-			else // success
-				OTLog::vOutput(1, "%s: Success invoking m_pWallet->LoadWallet() with data folder %s and filename: %s\n", 
-							   szFunc, strDataFolderPath.c_str(), GetWalletFilename());
-		}
-	}
-	// ------------------------------------------
-	// SET THE OLD NAME BACK, IF FAILURE.
-	//
-	if (false == bSuccess)
-	{
-		OTLog::vError("%s: Failed with data folder %s and filename: %s\n", szFunc,
-					   GetStoragePath(), GetWalletFilename());
-		SetWalletFilename(strOldName);  // However we failed, set back to old filename.
-	}
-	// ------------------------------------------
-	
+	if (bSuccess) OTLog::vOutput(0, "%s: Success invoking m_pWallet->LoadWallet() with data path %s and filename: %s\n", 
+							   szFunc, GetDataPath(), GetWalletFilename());
+	else OTLog::vError("%s: Failed invoking m_pWallet->LoadWallet() with data path %s and filename: %s\n", 
+							  szFunc, GetDataPath(), GetWalletFilename());
 	return bSuccess;
 }
 

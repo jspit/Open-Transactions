@@ -1039,7 +1039,7 @@ bool OTLog::CheckSetConfig_long(const char * szSection, const char * szKey, long
 
 	if (!strVar.Exists()) {
 		OTLog::LogSettingChange_long(szSection,szKey,lDefault);
-		OTLog::iniSimple.SetLongValue(szSection, szKey,lDefault,NULL,true);  // set default value
+		OTLog::iniSimple.SetLongValue(szSection, szKey,lDefault,NULL,false,true);  // set default value
 	};
 
 	out_lResult = OTLog::iniSimple.GetLongValue(szSection, szKey,NULL);
